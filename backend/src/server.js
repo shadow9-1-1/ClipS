@@ -1,0 +1,26 @@
+const dotenv = require('dotenv');
+
+dotenv.config();
+
+const http = require('http');
+const app = require('./app');
+const connectDB = require('./config/db');
+
+const PORT = process.env.PORT || 5000;
+
+const startServer = async () => {
+  try {
+    await connectDB();
+    const server = http.createServer(app);
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Health check at http://localhost:${PORT}/api/health`);
+      console.log(`API endpoints available at http://localhost:${PORT}/api/`);
+    });
+  } catch (err) {
+    console.error('Failed to start server', err);
+    process.exit(1);
+  }
+};
+
+startServer();
