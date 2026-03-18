@@ -3,6 +3,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const morgan = require('morgan');
 
 const routes = require('./routes');
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
@@ -15,8 +16,12 @@ if (process.env.NODE_ENV !== 'test') {
 
 app.use('/api', routes);
 
-app.use((req, res) => {
-  res.status(404).json({ message: 'Not Found' });
+app.use((req, res, next) => {
+  const err = new Error('Not Found');
+  err.statusCode = 404;
+  next(err);
 });
+
+app.use(errorHandler);
 
 module.exports = app;

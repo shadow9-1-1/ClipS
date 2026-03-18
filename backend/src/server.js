@@ -8,6 +8,14 @@ const connectDB = require('./config/db');
 
 const PORT = process.env.PORT || 5000;
 
+process.on('unhandledRejection', (err) => {
+  console.error('Unhandled Rejection', err);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception', err);
+});
+
 const startServer = async () => {
   try {
     await connectDB();
