@@ -10,8 +10,8 @@ const app = express();
 app.use(express.json());
 app.use(mongoSanitize());
 
-if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan('dev'));
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan(':method :url :status'));
 }
 
 app.use('/api', routes);
