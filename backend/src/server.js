@@ -22,8 +22,9 @@ const startServer = async () => {
     const server = http.createServer(app);
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
-      console.log(`Health check at http://localhost:${PORT}/api/health`);
-      console.log(`API endpoints available at http://localhost:${PORT}/api/`);
+      console.log(`Health check at http://localhost:${PORT}/api/v1/health`);
+      // console.log(`Auth register at http://localhost:${PORT}/api/v1/auth/register`);
+      // console.log(`Auth login at http://localhost:${PORT}/api/v1/auth/login`);
     });
   } catch (err) {
     console.error('Failed to start server', err);

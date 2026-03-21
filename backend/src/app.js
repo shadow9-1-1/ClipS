@@ -14,7 +14,7 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan(':method :url :status'));
 }
 
-app.use('/api', routes);
+app.use('/api/v1', routes);
 
 app.use((req, res, next) => {
   const err = new Error('Not Found');
