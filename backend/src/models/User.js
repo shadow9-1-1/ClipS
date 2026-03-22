@@ -82,18 +82,13 @@ const userSchema = new mongoose.Schema(
 userSchema.index({ username: 1 }, { unique: true });
 userSchema.index({ email: 1 }, { unique: true });
 
-userSchema.pre('save', async function preSave(next) {
+userSchema.pre('save', async function preSave() {
   if (!this.isModified('password')) {
-    return next();
+    return;
   }
 
-  try {
-    const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS) || 10;
-    this.password = await bcrypt.hash(this.password, saltRounds);
-    return next();
-  } catch (err) {
-    return next(err);
-  }
+  const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS) || 10;
+  this.password = await bcrypt.hash(this.password, saltRounds);
 });
 
 userSchema.methods.comparePassword = function comparePassword(candidatePassword) {
