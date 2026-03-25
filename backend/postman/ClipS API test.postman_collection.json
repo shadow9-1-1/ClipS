@@ -487,6 +487,145 @@
         }
       },
       "response": []
+    },
+    {
+      "name": "Create Video",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {\r",
+              "  pm.response.to.have.status(201);\r",
+              "});\r",
+              "\r",
+              "const res = pm.response.json();\r",
+              "const video = (res.data && (res.data.video || res.data)) || {};\r",
+              "const videoId = video.id || video._id;\r",
+              "\r",
+              "pm.test('Video id exists in response', function () {\r",
+              "  pm.expect(videoId).to.be.a('string');\r",
+              "  pm.expect(videoId.length).to.be.greaterThan(0);\r",
+              "});\r",
+              "\r",
+              "pm.environment.set('videoId', videoId);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"title\": \"Postman Test Video\",\r\n  \"description\": \"Created from Postman test\",\r\n  \"videoURL\": \"https://example.com/video.mp4\",\r\n  \"duration\": 120,\r\n  \"status\": \"public\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/videos",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "videos"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Create Review",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {\r",
+              "  pm.response.to.have.status(201);\r",
+              "});\r",
+              "\r",
+              "const res = pm.response.json();\r",
+              "pm.test('Review created response format', function () {\r",
+              "  pm.expect(res.status).to.eql('success');\r",
+              "  pm.expect(res.data).to.have.property('review');\r",
+              "  pm.expect(res.data.review).to.have.property('rating', 5);\r",
+              "  pm.expect(res.data.review).to.have.property('video');\r",
+              "  pm.expect(res.data.review).to.have.property('user');\r",
+              "});\r",
+              "\r",
+              "pm.test('Error response contract', function () {\r",
+              "  pm.expect(res.status).to.eql('error');\r",
+              "  pm.expect(res).to.have.property('message');\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"rating\": 5,\r\n  \"comment\": \"Great video, very helpful\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/videos/{{videoId}}/reviews",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "videos",
+            "{{videoId}}",
+            "reviews"
+          ]
+        }
+      },
+      "response": []
     }
   ]
 }
