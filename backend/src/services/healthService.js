@@ -11,11 +11,15 @@ const getHealthStatus = () => ({
   status: 'ok',
 });
 
-const getAdminHealthStatus = () => ({
-  uptime: process.uptime(),
-  memoryUsage: process.memoryUsage(),
-  dbStatus: DB_STATES[mongoose.connection.readyState] ?? 'unknown',
-});
+const getAdminHealthStatus = () => {
+  const { rss, heapUsed, heapTotal } = process.memoryUsage();
+
+  return {
+    uptime: process.uptime(),
+    memoryUsage: { rss, heapUsed, heapTotal },
+    dbStatus: DB_STATES[mongoose.connection.readyState] ?? 'unknown',
+  };
+};
 
 module.exports = {
   getHealthStatus,

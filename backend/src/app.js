@@ -3,6 +3,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const morgan = require('morgan');
 
 const routes = require('./routes');
+const healthRoutes = require('./routes/healthRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -15,6 +16,7 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan(':method :url :status'));
 }
 
+app.use('/health', healthRoutes);
 app.use('/api/v1', routes);
 
 app.use((req, res, next) => {
