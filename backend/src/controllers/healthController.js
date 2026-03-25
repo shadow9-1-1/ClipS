@@ -1,8 +1,7 @@
 const { getHealthStatus } = require('../services/healthService');
 
-const getHealth = async (req, res) => {
-  const status = getHealthStatus();
-  res.status(200).json(status);
+const getHealth = (req, res) => {
+  res.status(200).json(getHealthStatus());
 };
 
 module.exports = { getHealth };

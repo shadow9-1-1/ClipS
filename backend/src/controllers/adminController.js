@@ -1,3 +1,5 @@
+const { getAdminHealthStatus } = require('../services/healthService');
+
 const getAdminOverview = async (req, res) => {
   res.status(200).json({
     status: 'success',
@@ -12,6 +14,14 @@ const getAdminOverview = async (req, res) => {
   });
 };
 
+const getAdminHealth = (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    data: getAdminHealthStatus(),
+  });
+};
+
 module.exports = {
   getAdminOverview,
+  getAdminHealth,
 };
