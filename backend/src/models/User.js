@@ -1,20 +1,20 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
+const notificationChannelSchema = new mongoose.Schema(
+  {
+    followers: { type: Boolean, default: true },
+    comments: { type: Boolean, default: true },
+    likes: { type: Boolean, default: true },
+    tips: { type: Boolean, default: true },
+  },
+  { _id: false }
+);
+
 const notificationPreferencesSchema = new mongoose.Schema(
   {
-    email: {
-      type: Boolean,
-      default: true,
-    },
-    push: {
-      type: Boolean,
-      default: true,
-    },
-    sms: {
-      type: Boolean,
-      default: false,
-    },
+    inApp: { type: notificationChannelSchema, default: () => ({}) },
+    email: { type: notificationChannelSchema, default: () => ({}) },
   },
   { _id: false }
 );

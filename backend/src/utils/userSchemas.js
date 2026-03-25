@@ -31,7 +31,31 @@ const userIdParamSchema = z.object({
   }),
 });
 
+const notificationChannelSchema = z
+  .object({
+    followers: z.boolean().optional(),
+    comments: z.boolean().optional(),
+    likes: z.boolean().optional(),
+    tips: z.boolean().optional(),
+  })
+  .strict();
+
+const updatePreferencesSchema = z.object({
+  body: z
+    .object({
+      inApp: notificationChannelSchema.optional(),
+      email: notificationChannelSchema.optional(),
+    })
+    .strict()
+    .refine((data) => Object.keys(data).length > 0, {
+      message: 'Provide at least one preference to update',
+    }),
+  params: z.object({}).default({}),
+  query: z.object({}).default({}),
+});
+
 module.exports = {
   updateMeSchema,
   userIdParamSchema,
+  updatePreferencesSchema,
 };

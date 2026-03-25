@@ -87,8 +87,35 @@ const getPublicUserProfile = async (userId) => {
   };
 };
 
+const updateUserPreferences = async (userId, updates) => {
+  const $set = {};
+
+  for (const channel of ['inApp', 'email']) {
+    if (updates[channel] && typeof updates[channel] === 'object') {
+      for (const [key, value] of Object.entries(updates[channel])) {
+        $set[`notificationPreferences.${channel}.${key}`] = value;
+      }
+    }
+  }
+
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { $set },
+    { new: true, runValidators: true, context: 'query' }
+  ).select('notificationPreferences');
+
+  if (!user) {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  return user.notificationPreferences;
+};
+
 module.exports = {
   getCurrentUserProfile,
   updateCurrentUserProfile,
   getPublicUserProfile,
+  updateUserPreferences,
 };
