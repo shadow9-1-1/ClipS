@@ -1,5 +1,39 @@
 const User = require('../models/User');
 
+const defaultNotificationChannel = {
+  followers: true,
+  comments: true,
+  likes: true,
+  tips: true,
+};
+
+const normalizeNotificationChannel = (value) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { ...defaultNotificationChannel };
+  }
+
+  return {
+    followers: typeof value.followers === 'boolean' ? value.followers : true,
+    comments: typeof value.comments === 'boolean' ? value.comments : true,
+    likes: typeof value.likes === 'boolean' ? value.likes : true,
+    tips: typeof value.tips === 'boolean' ? value.tips : true,
+  };
+};
+
+const normalizeNotificationPreferences = (value) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {
+      inApp: { ...defaultNotificationChannel },
+      email: { ...defaultNotificationChannel },
+    };
+  }
+
+  return {
+    inApp: normalizeNotificationChannel(value.inApp),
+    email: normalizeNotificationChannel(value.email),
+  };
+};
+
 const mapUserResponse = (user) => ({
   id: user._id.toString(),
   username: user.username,
@@ -88,27 +122,27 @@ const getPublicUserProfile = async (userId) => {
 };
 
 const updateUserPreferences = async (userId, updates) => {
-  const $set = {};
-
-  for (const channel of ['inApp', 'email']) {
-    if (updates[channel] && typeof updates[channel] === 'object') {
-      for (const [key, value] of Object.entries(updates[channel])) {
-        $set[`notificationPreferences.${channel}.${key}`] = value;
-      }
-    }
-  }
-
-  const user = await User.findByIdAndUpdate(
-    userId,
-    { $set },
-    { new: true, runValidators: true, context: 'query' }
-  ).select('notificationPreferences');
+  const user = await User.findById(userId).select('notificationPreferences');
 
   if (!user) {
     const err = new Error('User not found');
     err.statusCode = 404;
     throw err;
   }
+
+  const normalized = normalizeNotificationPreferences(user.notificationPreferences);
+
+  for (const channel of ['inApp', 'email']) {
+    if (updates[channel] && typeof updates[channel] === 'object') {
+      normalized[channel] = {
+        ...normalized[channel],
+        ...updates[channel],
+      };
+    }
+  }
+
+  user.notificationPreferences = normalized;
+  await user.save();
 
   return user.notificationPreferences;
 };

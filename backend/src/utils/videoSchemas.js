@@ -12,6 +12,7 @@ const createVideoSchema = z.object({
         .number({ invalid_type_error: 'Duration must be a number' })
         .positive('Duration must be a positive number')
         .max(300, 'Duration cannot exceed 300 seconds'),
+      status: z.enum(['public', 'private', 'flagged']).optional(),
     })
     .strict(),
   params: z.object({}).default({}),

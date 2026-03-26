@@ -6,6 +6,7 @@ const createVideo = async (ownerId, payload) => {
     description: payload.description,
     videoURL: payload.videoURL,
     duration: payload.duration,
+    status: payload.status,
     owner: ownerId,
   });
 
