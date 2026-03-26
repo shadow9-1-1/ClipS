@@ -1,10 +1,12 @@
 const express = require('express');
 const mongoSanitize = require('express-mongo-sanitize');
 const morgan = require('morgan');
+const swaggerUi = require('swagger-ui-express');
 
 const routes = require('./routes');
 const healthRoutes = require('./routes/healthRoutes');
 const errorHandler = require('./middleware/errorHandler');
+const { swaggerSpec } = require('./config/swagger');
 
 const app = express();
 
@@ -45,6 +47,7 @@ if (process.env.NODE_ENV === 'development') {
 
 app.use('/health', healthRoutes);
 app.use('/api/v1', routes);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use((req, res, next) => {
     const err = new Error('Not Found');
