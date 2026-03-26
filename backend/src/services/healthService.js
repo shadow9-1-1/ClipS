@@ -8,7 +8,8 @@ const DB_STATES = {
 };
 
 const getHealthStatus = () => ({
-  status: 'ok',
+  status: 'Ok',
+  timestamp: new Date().toISOString(),
 });
 
 const getAdminHealthStatus = () => {
