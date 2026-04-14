@@ -1,6 +1,12 @@
 const User = require('../models/User');
+const Follow = require('../models/Follow');
 const { sendEmail } = require('./emailService');
-const { newFollowerTemplate, newCommentTemplate, newLikeTemplate } = require('../utils/emailTemplates');
+const {
+  newFollowerTemplate,
+  newCommentTemplate,
+  newLikeTemplate,
+  newVideoFromFollowedUserTemplate,
+} = require('../utils/emailTemplates');
 
 const getUserNotificationData = async (userId) => {
   if (!userId) {
@@ -106,8 +112,54 @@ const sendNewLikeNotification = async ({ recipientId, likerId, videoTitle }) => 
   });
 };
 
+const sendNewVideoFromFollowedUserNotification = async ({ creatorId, videoTitle }) => {
+  const creator = await getUserNotificationData(creatorId);
+
+  if (!creator) {
+    return;
+  }
+
+  const followRows = await Follow.find({ followingId: creatorId }).select('followerId').lean();
+  const followerIds = [...new Set(followRows.map((f) => f.followerId.toString()))];
+
+  if (followerIds.length === 0) {
+    return;
+  }
+
+  const followers = await User.find({
+    _id: { $in: followerIds },
+    active: true,
+    accountStatus: 'active',
+  })
+    .select('username email notificationPreferences')
+    .lean();
+
+  const outboundEmails = followers.filter(
+    (follower) =>
+      follower.email &&
+      follower._id.toString() !== creator._id.toString() &&
+      follower.notificationPreferences?.email?.newVideos !== false
+  );
+
+  await Promise.all(
+    outboundEmails.map(async (recipient) => {
+      const template = newVideoFromFollowedUserTemplate({
+        recipientUsername: recipient.username,
+        creatorUsername: creator.username,
+        videoTitle,
+      });
+
+      await trySend({
+        to: recipient.email,
+        ...template,
+      });
+    })
+  );
+};
+
 module.exports = {
   sendNewFollowerNotification,
   sendNewCommentNotification,
   sendNewLikeNotification,
+  sendNewVideoFromFollowedUserNotification,
 };

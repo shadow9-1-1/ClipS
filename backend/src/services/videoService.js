@@ -1,4 +1,5 @@
 const Video = require('../models/Video');
+const { sendNewVideoFromFollowedUserNotification } = require('./notificationService');
 
 const createVideo = async (ownerId, payload) => {
   const video = await Video.create({
@@ -9,6 +10,13 @@ const createVideo = async (ownerId, payload) => {
     status: payload.status,
     owner: ownerId,
   });
+
+  if (video.status === 'public') {
+    await sendNewVideoFromFollowedUserNotification({
+      creatorId: ownerId,
+      videoTitle: video.title,
+    });
+  }
 
   return video;
 };

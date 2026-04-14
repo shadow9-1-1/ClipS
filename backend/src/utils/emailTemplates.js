@@ -92,8 +92,27 @@ const newLikeTemplate = ({ recipientUsername, likerUsername, videoTitle }) => {
   };
 };
 
+const newVideoFromFollowedUserTemplate = ({ recipientUsername, creatorUsername, videoTitle }) => {
+  const subject = `${creatorUsername} posted a new video`;
+
+  return {
+    subject,
+    text: `Hi ${recipientUsername},\n\n${creatorUsername} posted a new video: "${videoTitle}" on ${appName}.`,
+    html: buildLayout({
+      title: 'New video from followed user',
+      preheader: `${creatorUsername} posted a new video`,
+      bodyHtml: `
+        <h2 style="margin:0 0 12px;font-size:20px;">New video posted</h2>
+        <p style="margin:0;font-size:15px;line-height:1.6;">Hi <strong>${escapeHtml(recipientUsername)}</strong>,</p>
+        <p style="margin:12px 0 0;font-size:15px;line-height:1.6;"><strong>${escapeHtml(creatorUsername)}</strong> posted a new video: <strong>${escapeHtml(videoTitle)}</strong>.</p>
+      `,
+    }),
+  };
+};
+
 module.exports = {
   newFollowerTemplate,
   newCommentTemplate,
   newLikeTemplate,
+  newVideoFromFollowedUserTemplate,
 };

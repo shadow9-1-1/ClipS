@@ -2,6 +2,7 @@ const User = require('../models/User');
 
 const defaultNotificationChannel = {
   followers: true,
+  newVideos: true,
   comments: true,
   likes: true,
   tips: true,
@@ -14,6 +15,7 @@ const normalizeNotificationChannel = (value) => {
 
   return {
     followers: typeof value.followers === 'boolean' ? value.followers : true,
+    newVideos: typeof value.newVideos === 'boolean' ? value.newVideos : true,
     comments: typeof value.comments === 'boolean' ? value.comments : true,
     likes: typeof value.likes === 'boolean' ? value.likes : true,
     tips: typeof value.tips === 'boolean' ? value.tips : true,

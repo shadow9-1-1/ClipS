@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const notificationChannelSchema = new mongoose.Schema(
   {
     followers: { type: Boolean, default: true },
+    newVideos: { type: Boolean, default: true },
     comments: { type: Boolean, default: true },
     likes: { type: Boolean, default: true },
     tips: { type: Boolean, default: true },

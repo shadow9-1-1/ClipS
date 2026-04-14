@@ -34,6 +34,7 @@ const userIdParamSchema = z.object({
 const notificationChannelSchema = z
   .object({
     followers: z.boolean().optional(),
+    newVideos: z.boolean().optional(),
     comments: z.boolean().optional(),
     likes: z.boolean().optional(),
     tips: z.boolean().optional(),
