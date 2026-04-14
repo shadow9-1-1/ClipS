@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Follow = require('../models/Follow');
 const User = require('../models/User');
+const { sendNewFollowerNotification } = require('./notificationService');
 
 const assertUserExists = async (userId) => {
   if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -37,6 +38,11 @@ const followUser = async (followerId, followingId) => {
     }
     throw err;
   }
+
+  await sendNewFollowerNotification({
+    recipientId: followingId,
+    followerId,
+  });
 };
 
 const unfollowUser = async (followerId, followingId) => {

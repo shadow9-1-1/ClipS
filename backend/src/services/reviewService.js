@@ -1,8 +1,9 @@
 const Review = require('../models/Review');
 const Video = require('../models/Video');
+const { sendNewCommentNotification } = require('./notificationService');
 
 const createVideoReview = async ({ videoId, userId, rating, comment }) => {
-  const video = await Video.findById(videoId).select('_id');
+  const video = await Video.findById(videoId).select('_id owner title');
 
   if (!video) {
     const err = new Error('Video not found');
@@ -24,6 +25,15 @@ const createVideoReview = async ({ videoId, userId, rating, comment }) => {
     user: userId,
     video: videoId,
   });
+
+  if (review.comment) {
+    await sendNewCommentNotification({
+      recipientId: video.owner,
+      commenterId: userId,
+      videoTitle: video.title,
+      comment: review.comment,
+    });
+  }
 
   return {
     id: review._id.toString(),
