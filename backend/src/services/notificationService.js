@@ -26,6 +26,19 @@ const canReceiveEmail = (recipient, preferenceKey) => {
   return recipient.notificationPreferences?.email?.[preferenceKey] !== false;
 };
 
+const sendIfAllowed = async ({ recipient, preferenceKey, template }) => {
+  if (!canReceiveEmail(recipient, preferenceKey)) {
+    return { sent: false, reason: 'preference_disabled_or_user_ineligible' };
+  }
+
+  await trySend({
+    to: recipient.email,
+    ...template,
+  });
+
+  return { sent: true };
+};
+
 const trySend = async (mailData) => {
   try {
     await sendEmail(mailData);
@@ -44,18 +57,15 @@ const sendNewFollowerNotification = async ({ recipientId, followerId }) => {
     return;
   }
 
-  if (!canReceiveEmail(recipient, 'followers')) {
-    return;
-  }
-
   const template = newFollowerTemplate({
     recipientUsername: recipient.username,
     followerUsername: follower.username,
   });
 
-  await trySend({
-    to: recipient.email,
-    ...template,
+  await sendIfAllowed({
+    recipient,
+    preferenceKey: 'followers',
+    template,
   });
 };
 
@@ -69,10 +79,6 @@ const sendNewCommentNotification = async ({ recipientId, commenterId, videoTitle
     return;
   }
 
-  if (!canReceiveEmail(recipient, 'comments')) {
-    return;
-  }
-
   const template = newCommentTemplate({
     recipientUsername: recipient.username,
     commenterUsername: commenter.username,
@@ -80,9 +86,10 @@ const sendNewCommentNotification = async ({ recipientId, commenterId, videoTitle
     comment,
   });
 
-  await trySend({
-    to: recipient.email,
-    ...template,
+  await sendIfAllowed({
+    recipient,
+    preferenceKey: 'comments',
+    template,
   });
 };
 
@@ -96,19 +103,16 @@ const sendNewLikeNotification = async ({ recipientId, likerId, videoTitle }) => 
     return;
   }
 
-  if (!canReceiveEmail(recipient, 'likes')) {
-    return;
-  }
-
   const template = newLikeTemplate({
     recipientUsername: recipient.username,
     likerUsername: liker.username,
     videoTitle,
   });
 
-  await trySend({
-    to: recipient.email,
-    ...template,
+  await sendIfAllowed({
+    recipient,
+    preferenceKey: 'likes',
+    template,
   });
 };
 
@@ -134,12 +138,7 @@ const sendNewVideoFromFollowedUserNotification = async ({ creatorId, videoTitle 
     .select('username email notificationPreferences')
     .lean();
 
-  const outboundEmails = followers.filter(
-    (follower) =>
-      follower.email &&
-      follower._id.toString() !== creator._id.toString() &&
-      follower.notificationPreferences?.email?.newVideos !== false
-  );
+  const outboundEmails = followers.filter((follower) => follower._id.toString() !== creator._id.toString());
 
   await Promise.all(
     outboundEmails.map(async (recipient) => {
@@ -149,9 +148,10 @@ const sendNewVideoFromFollowedUserNotification = async ({ creatorId, videoTitle 
         videoTitle,
       });
 
-      await trySend({
-        to: recipient.email,
-        ...template,
+      await sendIfAllowed({
+        recipient,
+        preferenceKey: 'newVideos',
+        template,
       });
     })
   );
