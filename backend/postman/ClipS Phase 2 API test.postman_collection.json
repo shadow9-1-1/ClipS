@@ -1723,6 +1723,68 @@
             "description": "Requires environment variable largeMp4FilePath larger than MAX_VIDEO_UPLOAD_BYTES."
           },
           "response": []
+        },
+        {
+          "name": "Video Upload Multipart (Duration > 5 Minutes)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const res = pm.response.json();",
+                  "pm.expect(res.status).to.eql('error');",
+                  "pm.expect(res.message).to.include('Video duration exceeds 300 seconds');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "video",
+                  "type": "file",
+                  "src": "{{longDurationMp4FilePath}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/videos/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "videos",
+                "upload"
+              ]
+            },
+            "description": "Requires environment variable longDurationMp4FilePath pointing to an .mp4 file longer than 300 seconds."
+          },
+          "response": []
         }
       ]
     },
