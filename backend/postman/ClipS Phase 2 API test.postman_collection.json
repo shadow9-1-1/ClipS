@@ -1206,6 +1206,130 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Storage Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const res = pm.response.json();",
+                  "pm.expect(res.status).to.eql('success');",
+                  "pm.expect(res.data.status).to.eql('connected');",
+                  "pm.expect(res.data).to.have.property('endpoint');",
+                  "pm.expect(res.data).to.have.property('bucket');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/storage/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "storage",
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Storage Test Upload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const res = pm.response.json();",
+                  "pm.expect(res.status).to.eql('success');",
+                  "pm.expect(res.message).to.eql('File uploaded to object storage successfully');",
+                  "pm.expect(res.data).to.have.property('bucket');",
+                  "pm.expect(res.data).to.have.property('key');",
+                  "pm.expect(res.data).to.have.property('url');",
+                  "pm.expect(res.data.bucket).to.eql('media');",
+                  "pm.environment.set('storageObjectKey', res.data.key);",
+                  "pm.environment.set('storageObjectUrl', res.data.url);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"filename\": \"postman-test-upload.txt\",\n  \"base64Data\": \"SGVsbG8gZnJvbSBQb3N0bWFuIGFuZCBNaW5JTyBTMyBTREs=\",\n  \"contentType\": \"text/plain\",\n  \"bucket\": \"media\",\n  \"keyPrefix\": \"postman-tests\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/storage/test-upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "storage",
+                "test-upload"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
