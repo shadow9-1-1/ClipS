@@ -5,6 +5,7 @@ const Review = require('../models/Review');
 const VideoLike = require('../models/VideoLike');
 const { sendNewVideoFromFollowedUserNotification } = require('./notificationService');
 const { uploadVideoObject } = require('./storageService');
+const { validateVideoDuration } = require('./videoValidationService');
 
 const reviewCollection = Review.collection.name;
 const videoLikeCollection = VideoLike.collection.name;
@@ -189,9 +190,12 @@ const getTrendingFeed = async ({ limit, skip }) => {
 };
 
 const uploadVideoFile = async ({ ownerId, file }) => {
+  const { duration } = await validateVideoDuration(file);
+
   return uploadVideoObject({
     file,
     ownerId,
+    duration,
   });
 };
 

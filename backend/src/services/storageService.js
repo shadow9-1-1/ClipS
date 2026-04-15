@@ -180,7 +180,7 @@ const uploadBase64Object = async ({ bucket, keyPrefix, filename, base64Data, con
   });
 };
 
-const uploadVideoObject = async ({ file, ownerId, bucket }) => {
+const uploadVideoObject = async ({ file, ownerId, bucket, duration }) => {
   if (!file || !file.buffer) {
     const err = new Error('Video file is required');
     err.statusCode = 400;
@@ -204,6 +204,7 @@ const uploadVideoObject = async ({ file, ownerId, bucket }) => {
     originalName: file.originalname,
     mimeType: file.mimetype,
     size: file.size,
+    duration,
   };
 };
 
