@@ -62,9 +62,29 @@ const getVideosSchema = z.object({
     .default({}),
 });
 
+const getFeedSchema = z.object({
+  body: z.object({}).default({}),
+  params: z.object({}).default({}),
+  query: z
+    .object({
+      limit: z
+        .string()
+        .optional()
+        .transform((val) => (val ? parseInt(val, 10) : 20))
+        .pipe(z.number().int().min(1).max(100)),
+      skip: z
+        .string()
+        .optional()
+        .transform((val) => (val ? parseInt(val, 10) : 0))
+        .pipe(z.number().int().min(0)),
+    })
+    .default({}),
+});
+
 module.exports = {
   createVideoSchema,
   updateVideoSchema,
   videoIdParamSchema,
   getVideosSchema,
+  getFeedSchema,
 };

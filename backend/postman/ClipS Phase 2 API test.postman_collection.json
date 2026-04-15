@@ -1070,6 +1070,142 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Following Feed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const res = pm.response.json();",
+                  "pm.expect(res.status).to.eql('success');",
+                  "pm.expect(res.feedType).to.eql('following');",
+                  "pm.expect(res).to.have.property('results');",
+                  "pm.expect(res).to.have.property('total');",
+                  "pm.expect(res.data).to.have.property('videos');",
+                  "pm.expect(res.data.videos).to.be.an('array');",
+                  "if (res.data.videos.length > 0) {",
+                  "  pm.expect(res.data.videos[0]).to.have.property('averageRating');",
+                  "  pm.expect(res.data.videos[0]).to.have.property('recentEngagement');",
+                  "  pm.expect(res.data.videos[0]).to.have.property('owner');",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/videos/feed/following?limit=20&skip=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "videos",
+                "feed",
+                "following"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "skip",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Trending Feed",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "const res = pm.response.json();",
+                  "pm.expect(res.status).to.eql('success');",
+                  "pm.expect(res.feedType).to.eql('trending');",
+                  "pm.expect(res).to.have.property('results');",
+                  "pm.expect(res).to.have.property('total');",
+                  "pm.expect(res.data).to.have.property('videos');",
+                  "pm.expect(res.data.videos).to.be.an('array');",
+                  "if (res.data.videos.length > 0) {",
+                  "  pm.expect(res.data.videos[0]).to.have.property('averageRating');",
+                  "  pm.expect(res.data.videos[0]).to.have.property('recentEngagement');",
+                  "  pm.expect(res.data.videos[0]).to.have.property('owner');",
+                  "}"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/videos/feed/trending?limit=20&skip=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "videos",
+                "feed",
+                "trending"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "skip",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
