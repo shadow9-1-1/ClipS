@@ -2,8 +2,10 @@ const {
   S3Client,
   HeadBucketCommand,
   PutObjectCommand,
+  GetObjectCommand,
   CreateBucketCommand,
 } = require('@aws-sdk/client-s3');
+const crypto = require('crypto');
 
 const getStorageConfig = () => {
   const endpoint = process.env.S3_ENDPOINT || 'http://127.0.0.1:9000';
@@ -11,6 +13,9 @@ const getStorageConfig = () => {
   const accessKeyId = process.env.S3_ACCESS_KEY || process.env.MINIO_ROOT_USER || 'minioadmin';
   const secretAccessKey = process.env.S3_SECRET_KEY || process.env.MINIO_ROOT_PASSWORD || 'minioadmin';
   const bucket = process.env.S3_BUCKET || 'media';
+  const backendBaseUrl = process.env.BACKEND_BASE_URL || `http://127.0.0.1:${process.env.PORT || 5000}`;
+  const presignedUrlExpiresIn = Number(process.env.S3_PRESIGNED_URL_EXPIRES_IN || 300);
+  const signingSecret = process.env.STORAGE_URL_SIGNING_SECRET || process.env.JWT_SECRET || 'clips-storage-signing-secret';
 
   return {
     endpoint,
@@ -19,7 +24,9 @@ const getStorageConfig = () => {
     secretAccessKey,
     bucket,
     forcePathStyle: process.env.S3_FORCE_PATH_STYLE !== 'false',
-    publicBaseUrl: process.env.S3_PUBLIC_BASE_URL || endpoint,
+    backendBaseUrl,
+    presignedUrlExpiresIn,
+    signingSecret,
   };
 };
 
@@ -50,16 +57,87 @@ const ensureBucketExists = async (bucketName) => {
   }
 };
 
-const buildObjectUrl = (bucket, key) => {
-  const base = storageConfig.publicBaseUrl.replace(/\/$/, '');
+const normalizeExpiresIn = (requestedSeconds) => {
+  const defaultSeconds = storageConfig.presignedUrlExpiresIn;
+  const parsed = Number(requestedSeconds || defaultSeconds);
 
-  if (storageConfig.forcePathStyle) {
-    return `${base}/${bucket}/${key}`;
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    const err = new Error('expiresIn must be a positive number');
+    err.statusCode = 400;
+    throw err;
   }
 
-  const endpointWithoutProtocol = base.replace(/^https?:\/\//, '');
-  const protocol = base.startsWith('https://') ? 'https' : 'http';
-  return `${protocol}://${bucket}.${endpointWithoutProtocol}/${key}`;
+  return Math.min(Math.floor(parsed), 60 * 60 * 24);
+};
+
+const buildSignature = ({ bucket, key, expiresAt }) => {
+  const payload = `${bucket}:${key}:${expiresAt}`;
+  return crypto.createHmac('sha256', storageConfig.signingSecret).update(payload).digest('hex');
+};
+
+const generateTemporaryAccessUrl = ({ bucket, key, expiresIn }) => {
+  const targetBucket = bucket || storageConfig.bucket;
+  const validFor = normalizeExpiresIn(expiresIn);
+  const expiresAt = Date.now() + validFor * 1000;
+  const signature = buildSignature({
+    bucket: targetBucket,
+    key,
+    expiresAt,
+  });
+
+  const base = storageConfig.backendBaseUrl.replace(/\/$/, '');
+  const query = new URLSearchParams({
+    bucket: targetBucket,
+    key,
+    expiresAt: String(expiresAt),
+    signature,
+  });
+
+  return {
+    accessUrl: `${base}/api/v1/storage/access?${query.toString()}`,
+    expiresIn: validFor,
+    expiresAt,
+  };
+};
+
+const getObjectForSecureAccess = async ({ bucket, key, expiresAt, signature }) => {
+  const targetBucket = bucket || storageConfig.bucket;
+  const expectedSignature = buildSignature({
+    bucket: targetBucket,
+    key,
+    expiresAt,
+  });
+
+  const isValidSignature =
+    typeof signature === 'string' &&
+    signature.length === expectedSignature.length &&
+    crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature));
+
+  if (!isValidSignature) {
+    const err = new Error('Invalid or tampered access URL');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  if (Date.now() > Number(expiresAt)) {
+    const err = new Error('Access URL has expired');
+    err.statusCode = 403;
+    throw err;
+  }
+
+  const response = await s3Client.send(
+    new GetObjectCommand({
+      Bucket: targetBucket,
+      Key: key,
+    })
+  );
+
+  return {
+    stream: response.Body,
+    contentType: response.ContentType || 'application/octet-stream',
+    contentLength: response.ContentLength,
+    etag: response.ETag,
+  };
 };
 
 const uploadBuffer = async ({ bucket, key, body, contentType }) => {
@@ -75,12 +153,16 @@ const uploadBuffer = async ({ bucket, key, body, contentType }) => {
   });
 
   const result = await s3Client.send(command);
+  const temporaryAccess = generateTemporaryAccessUrl({
+    bucket: targetBucket,
+    key,
+  });
 
   return {
     bucket: targetBucket,
     key,
     etag: result.ETag,
-    url: buildObjectUrl(targetBucket, key),
+    ...temporaryAccess,
   };
 };
 
@@ -111,4 +193,6 @@ const testConnection = async () => {
 module.exports = {
   testConnection,
   uploadBase64Object,
+  generateTemporaryAccessUrl,
+  getObjectForSecureAccess,
 };
