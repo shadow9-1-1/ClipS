@@ -3,6 +3,7 @@ const {
   getVideos,
   getFollowingFeed,
   getTrendingFeed,
+  uploadVideoFile,
   updateVideo,
   deleteVideo,
 } = require('../services/videoService');
@@ -61,6 +62,21 @@ const trendingFeed = async (req, res) => {
   });
 };
 
+const uploadBinary = async (req, res) => {
+  const uploaded = await uploadVideoFile({
+    ownerId: req.user._id,
+    file: req.file,
+  });
+
+  res.status(201).json({
+    status: 'success',
+    message: 'Video uploaded successfully',
+    data: {
+      file: uploaded,
+    },
+  });
+};
+
 const update = async (req, res) => {
   const video = await updateVideo(req.params.id, req.user._id, req.body);
 
@@ -84,6 +100,7 @@ module.exports = {
   list,
   followingFeed,
   trendingFeed,
+  uploadBinary,
   update,
   remove,
 };

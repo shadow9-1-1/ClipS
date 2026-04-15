@@ -180,6 +180,33 @@ const uploadBase64Object = async ({ bucket, keyPrefix, filename, base64Data, con
   });
 };
 
+const uploadVideoObject = async ({ file, ownerId, bucket }) => {
+  if (!file || !file.buffer) {
+    const err = new Error('Video file is required');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const targetBucket = bucket || process.env.S3_VIDEO_BUCKET || storageConfig.bucket;
+  const safeOriginalName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '-');
+  const ownerPrefix = ownerId ? `videos/${ownerId}` : 'videos/anonymous';
+  const objectKey = `${ownerPrefix}/${Date.now()}-${safeOriginalName}`;
+
+  const uploaded = await uploadBuffer({
+    bucket: targetBucket,
+    key: objectKey,
+    body: file.buffer,
+    contentType: file.mimetype,
+  });
+
+  return {
+    ...uploaded,
+    originalName: file.originalname,
+    mimeType: file.mimetype,
+    size: file.size,
+  };
+};
+
 const testConnection = async () => {
   await ensureBucketExists(storageConfig.bucket);
 
@@ -193,6 +220,7 @@ const testConnection = async () => {
 module.exports = {
   testConnection,
   uploadBase64Object,
+  uploadVideoObject,
   generateTemporaryAccessUrl,
   getObjectForSecureAccess,
 };

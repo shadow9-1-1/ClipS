@@ -1,10 +1,11 @@
 const express = require('express');
 
-const { create, list, followingFeed, trendingFeed, update, remove } = require('../controllers/videoController');
+const { create, list, followingFeed, trendingFeed, uploadBinary, update, remove } = require('../controllers/videoController');
 const { createReview } = require('../controllers/reviewController');
 const { like, unlike } = require('../controllers/likeController');
 const asyncHandler = require('../utils/asyncHandler');
 const protect = require('../middleware/protect');
+const { handleVideoUpload } = require('../middleware/uploadVideo');
 const validateRequest = require('../middleware/validateRequest');
 const {
 	createVideoSchema,
@@ -18,6 +19,7 @@ const { createReviewSchema } = require('../utils/reviewSchemas');
 const router = express.Router();
 
 router.post('/', asyncHandler(protect), validateRequest(createVideoSchema), asyncHandler(create));
+router.post('/upload', asyncHandler(protect), handleVideoUpload('video'), asyncHandler(uploadBinary));
 router.get('/', validateRequest(getVideosSchema), asyncHandler(list));
 router.get('/feed/following', asyncHandler(protect), validateRequest(getFeedSchema), asyncHandler(followingFeed));
 router.get('/feed/trending', validateRequest(getFeedSchema), asyncHandler(trendingFeed));

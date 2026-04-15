@@ -4,6 +4,7 @@ const Follow = require('../models/Follow');
 const Review = require('../models/Review');
 const VideoLike = require('../models/VideoLike');
 const { sendNewVideoFromFollowedUserNotification } = require('./notificationService');
+const { uploadVideoObject } = require('./storageService');
 
 const reviewCollection = Review.collection.name;
 const videoLikeCollection = VideoLike.collection.name;
@@ -187,6 +188,13 @@ const getTrendingFeed = async ({ limit, skip }) => {
   return { videos, total: totalResult[0]?.total || 0 };
 };
 
+const uploadVideoFile = async ({ ownerId, file }) => {
+  return uploadVideoObject({
+    file,
+    ownerId,
+  });
+};
+
 const updateVideo = async (videoId, requesterId, payload) => {
   const video = await Video.findById(videoId);
 
@@ -236,6 +244,7 @@ module.exports = {
   getVideos,
   getFollowingFeed,
   getTrendingFeed,
+  uploadVideoFile,
   updateVideo,
   deleteVideo,
 };
