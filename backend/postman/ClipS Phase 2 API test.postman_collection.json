@@ -1530,6 +1530,199 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Video Upload Multipart (Valid MP4)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const res = pm.response.json();",
+                  "pm.expect(res.status).to.eql('success');",
+                  "pm.expect(res.message).to.eql('Video uploaded successfully');",
+                  "pm.expect(res.data).to.have.property('file');",
+                  "pm.expect(res.data.file).to.have.property('bucket');",
+                  "pm.expect(res.data.file).to.have.property('key');",
+                  "pm.expect(res.data.file).to.have.property('accessUrl');",
+                  "pm.expect(res.data.file).to.have.property('expiresIn');",
+                  "pm.environment.set('uploadedVideoKey', res.data.file.key);",
+                  "pm.environment.set('uploadedVideoAccessUrl', res.data.file.accessUrl);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "video",
+                  "type": "file",
+                  "src": "{{mp4FilePath}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/videos/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "videos",
+                "upload"
+              ]
+            },
+            "description": "Requires environment variable mp4FilePath pointing to a local .mp4 file."
+          },
+          "response": []
+        },
+        {
+          "name": "Video Upload Multipart (Invalid MIME)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "const res = pm.response.json();",
+                  "pm.expect(res.status).to.eql('error');",
+                  "pm.expect(res.message).to.eql('Only video/mp4 files are allowed');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "video",
+                  "type": "file",
+                  "src": "{{nonMp4FilePath}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/videos/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "videos",
+                "upload"
+              ]
+            },
+            "description": "Requires environment variable nonMp4FilePath (e.g., .txt or .jpg)."
+          },
+          "response": []
+        },
+        {
+          "name": "Video Upload Multipart (File Too Large)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 413', function () {",
+                  "  pm.response.to.have.status(413);",
+                  "});",
+                  "const res = pm.response.json();",
+                  "pm.expect(res.status).to.eql('error');",
+                  "pm.expect(res.message).to.include('File too large.');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "video",
+                  "type": "file",
+                  "src": "{{largeMp4FilePath}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/videos/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "videos",
+                "upload"
+              ]
+            },
+            "description": "Requires environment variable largeMp4FilePath larger than MAX_VIDEO_UPLOAD_BYTES."
+          },
+          "response": []
         }
       ]
     },
