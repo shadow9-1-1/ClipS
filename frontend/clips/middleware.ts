@@ -6,6 +6,14 @@ import {
   verifySessionToken,
 } from "@/lib/auth/verify-edge-token";
 
+function decodeCookieValue(raw: string): string {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
 function loginRedirect(request: NextRequest) {
   const url = request.nextUrl.clone();
   const pathname = request.nextUrl.pathname + request.nextUrl.search;
@@ -25,7 +33,8 @@ export async function middleware(request: NextRequest) {
     return loginRedirect(request);
   }
 
-  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const raw = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+  const token = raw ? decodeCookieValue(raw) : undefined;
 
   if (!token) {
     return loginRedirect(request);

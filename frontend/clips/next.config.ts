@@ -13,6 +13,21 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: projectRoot,
   },
+  /** Fewer watched files in dev (helps OneDrive / low-RAM machines). */
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: [
+          "**/node_modules/**",
+          "**/.git/**",
+          path.join(projectRoot, ".next", "**"),
+        ],
+        aggregateTimeout: 600,
+      };
+    }
+    return config;
+  },
   async rewrites() {
     return [
       {
