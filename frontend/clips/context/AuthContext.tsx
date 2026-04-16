@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { getApiBaseUrl } from "@/lib/api";
+import { getBearerAuthHeader } from "@/lib/auth-headers";
 
 const ME_PATH = "/api/v1/users/me";
 
@@ -54,7 +55,10 @@ async function fetchMeOnce(baseUrl: string): Promise<FetchMeResult> {
     res = await fetch(`${baseUrl}${ME_PATH}`, {
       method: "GET",
       credentials: "include",
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        ...getBearerAuthHeader(),
+      },
       cache: "no-store",
     });
   } catch {

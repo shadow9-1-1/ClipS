@@ -1,34 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Spinner } from "@/components/ui/Spinner";
-import { useAuth } from "@/hooks/useAuth";
 import { getApiBaseUrl } from "@/lib/api";
-import { isValidEmail } from "@/lib/auth-validation";
-import { setSessionTokenCookie } from "@/lib/session-cookie";
+import {
+  isValidEmail,
+  validatePassword,
+  validateUsername,
+} from "@/lib/auth-validation";
 
-function safeCallbackPath(raw: string | null): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//")) return "/";
-  return raw;
-}
-
-type LoginResponse = {
+type RegisterResponse = {
   status?: string;
   message?: string;
-  data?: { token?: string };
+  data?: unknown;
 };
 
-function LoginForm() {
+export default function RegisterPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { refetch } = useAuth();
 
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<{
+    username?: string;
     email?: string;
     password?: string;
   }>({});
@@ -41,9 +38,13 @@ function LoginForm() {
     setFieldErrors({});
 
     const nextField: typeof fieldErrors = {};
+    const uErr = validateUsername(username);
+    if (uErr) nextField.username = uErr;
     if (!email.trim()) nextField.email = "Email is required";
     else if (!isValidEmail(email)) nextField.email = "Enter a valid email address";
-    if (!password) nextField.password = "Password is required";
+    const pErr = validatePassword(password);
+    if (pErr) nextField.password = pErr;
+
     if (Object.keys(nextField).length > 0) {
       setFieldErrors(nextField);
       return;
@@ -52,7 +53,7 @@ function LoginForm() {
     setLoading(true);
     try {
       const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/v1/auth/login`, {
+      const res = await fetch(`${baseUrl}/api/v1/auth/register`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -60,12 +61,13 @@ function LoginForm() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          username: username.trim(),
           email: email.trim().toLowerCase(),
           password,
         }),
       });
 
-      const data = (await res.json()) as LoginResponse;
+      const data = (await res.json()) as RegisterResponse;
 
       if (!res.ok) {
         setError(
@@ -76,17 +78,7 @@ function LoginForm() {
         return;
       }
 
-      const token = data.data?.token;
-      if (typeof token !== "string" || !token) {
-        setError("Login succeeded but no token was returned.");
-        return;
-      }
-
-      setSessionTokenCookie(token);
-      await refetch();
-
-      const dest = safeCallbackPath(searchParams.get("callbackUrl"));
-      router.push(dest);
+      router.push("/login");
       router.refresh();
     } catch {
       setError("Something went wrong. Please try again.");
@@ -97,16 +89,16 @@ function LoginForm() {
 
   return (
     <AuthShell
-      title="Sign in"
-      subtitle="Welcome back to ClipSphere."
+      title="Create an account"
+      subtitle="Join ClipSphere with a username and email."
       footer={
         <p className="text-center text-sm text-zinc-600 dark:text-zinc-400">
-          Don&apos;t have an account?{" "}
+          Already have an account?{" "}
           <Link
-            href="/register"
+            href="/login"
             className="font-medium text-zinc-900 underline underline-offset-2 hover:text-zinc-700 dark:text-zinc-100 dark:hover:text-zinc-300"
           >
-            Create one
+            Sign in
           </Link>
         </p>
       }
@@ -127,13 +119,38 @@ function LoginForm() {
 
         <div className="space-y-1.5">
           <label
-            htmlFor="login-email"
+            htmlFor="register-username"
+            className="block text-sm font-medium text-zinc-800 dark:text-zinc-200"
+          >
+            Username
+          </label>
+          <input
+            id="register-username"
+            name="username"
+            type="text"
+            autoComplete="username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none ring-zinc-400 placeholder:text-zinc-400 focus:border-zinc-500 focus:ring-2 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-zinc-500"
+            placeholder="clip_fan"
+            disabled={loading}
+          />
+          {fieldErrors.username ? (
+            <p className="text-xs text-red-600 dark:text-red-400">
+              {fieldErrors.username}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="space-y-1.5">
+          <label
+            htmlFor="register-email"
             className="block text-sm font-medium text-zinc-800 dark:text-zinc-200"
           >
             Email
           </label>
           <input
-            id="login-email"
+            id="register-email"
             name="email"
             type="email"
             autoComplete="email"
@@ -152,20 +169,20 @@ function LoginForm() {
 
         <div className="space-y-1.5">
           <label
-            htmlFor="login-password"
+            htmlFor="register-password"
             className="block text-sm font-medium text-zinc-800 dark:text-zinc-200"
           >
             Password
           </label>
           <input
-            id="login-password"
+            id="register-password"
             name="password"
             type="password"
-            autoComplete="current-password"
+            autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none ring-zinc-400 placeholder:text-zinc-400 focus:border-zinc-500 focus:ring-2 dark:border-zinc-600 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-zinc-500"
-            placeholder="••••••••"
+            placeholder="At least 8 characters"
             disabled={loading}
           />
           {fieldErrors.password ? (
@@ -183,31 +200,13 @@ function LoginForm() {
           {loading ? (
             <>
               <Spinner size="sm" />
-              Signing in…
+              Creating account…
             </>
           ) : (
-            "Sign in"
+            "Create account"
           )}
         </button>
       </form>
     </AuthShell>
-  );
-}
-
-function LoginFallback() {
-  return (
-    <AuthShell title="Sign in" subtitle="Welcome back to ClipSphere.">
-      <div className="flex justify-center rounded-xl border border-zinc-200 bg-white p-12 dark:border-zinc-800 dark:bg-zinc-900/40">
-        <Spinner size="lg" label="Loading sign-in" />
-      </div>
-    </AuthShell>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<LoginFallback />}>
-      <LoginForm />
-    </Suspense>
   );
 }
