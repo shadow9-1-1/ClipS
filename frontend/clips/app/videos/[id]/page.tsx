@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { VideoDetailContent } from "@/components/video/VideoDetailContent";
-import { getApiBaseUrl } from "@/lib/api";
+import { getApiPrefix } from "@/lib/api";
 
 export type PublicVideo = {
   id: string;
@@ -12,8 +12,7 @@ export type PublicVideo = {
 };
 
 async function fetchVideo(id: string): Promise<PublicVideo | null> {
-  const base = getApiBaseUrl();
-  const res = await fetch(`${base}/api/v1/videos/${id}`, {
+  const res = await fetch(`${getApiPrefix()}/v1/videos/${id}`, {
     next: { revalidate: 0 },
   });
 

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { StarRating } from "@/components/review/StarRating";
 import { ReviewOwnerActions } from "@/components/review/ReviewOwnerActions";
-import { getApiBaseUrl } from "@/lib/api";
+import { getApiPrefix } from "@/lib/api";
 import { Spinner } from "@/components/ui/Spinner";
 
 export type ReviewItem = {
@@ -42,7 +42,7 @@ export function ReviewList({
       setError(null);
       try {
         const res = await fetch(
-          `${getApiBaseUrl()}/api/v1/videos/${videoId}/reviews`,
+          `${getApiPrefix()}/v1/videos/${videoId}/reviews`,
           { cache: "no-store" }
         );
         if (!res.ok) {

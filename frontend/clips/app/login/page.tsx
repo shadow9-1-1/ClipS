@@ -6,7 +6,11 @@ import { Suspense, useState } from "react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Spinner } from "@/components/ui/Spinner";
 import { useAuth } from "@/hooks/useAuth";
-import { getApiBaseUrl } from "@/lib/api";
+import {
+  getApiPrefix,
+  getFetchErrorMessage,
+  readResponseJson,
+} from "@/lib/api";
 import { isValidEmail } from "@/lib/auth-validation";
 import { setSessionTokenCookie } from "@/lib/session-cookie";
 
@@ -51,8 +55,7 @@ function LoginForm() {
 
     setLoading(true);
     try {
-      const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/v1/auth/login`, {
+      const res = await fetch(`${getApiPrefix()}/v1/auth/login`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -65,7 +68,7 @@ function LoginForm() {
         }),
       });
 
-      const data = (await res.json()) as LoginResponse;
+      const data = await readResponseJson<LoginResponse>(res);
 
       if (!res.ok) {
         setError(
@@ -88,8 +91,8 @@ function LoginForm() {
       const dest = safeCallbackPath(searchParams.get("callbackUrl"));
       router.push(dest);
       router.refresh();
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      setError(getFetchErrorMessage(err));
     } finally {
       setLoading(false);
     }

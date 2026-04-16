@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 const mongoSanitize = require('express-mongo-sanitize');
 const morgan = require('morgan');
 const swaggerUi = require('swagger-ui-express');
@@ -9,6 +10,38 @@ const errorHandler = require('./middleware/errorHandler');
 const { swaggerSpec } = require('./config/swagger');
 
 const app = express();
+
+// ============================================
+// CORS (Next.js on :3000 → API on :5000)
+// ============================================
+const defaultDevOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
+const extraOrigins = (process.env.CORS_ORIGIN || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+app.use(
+    cors({
+        origin(origin, callback) {
+            if (!origin) {
+                return callback(null, true);
+            }
+            const allowed = [...defaultDevOrigins, ...extraOrigins];
+            if (allowed.includes(origin)) {
+                return callback(null, true);
+            }
+            if (process.env.NODE_ENV !== 'production') {
+                if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+                    return callback(null, true);
+                }
+            }
+            return callback(null, false);
+        },
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    })
+);
 
 // ============================================
 // Body Parser Middleware

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useIsOwner } from "@/hooks/useIsOwner";
-import { getApiBaseUrl } from "@/lib/api";
+import { getApiPrefix } from "@/lib/api";
 import { getBearerAuthHeader } from "@/lib/auth-headers";
 
 type VideoOwnerActionsProps = {
@@ -32,7 +32,7 @@ export function VideoOwnerActions({ videoId, ownerId }: VideoOwnerActionsProps) 
         setError("You must be signed in.");
         return;
       }
-      const res = await fetch(`${getApiBaseUrl()}/api/v1/videos/${videoId}`, {
+      const res = await fetch(`${getApiPrefix()}/v1/videos/${videoId}`, {
         method: "DELETE",
         credentials: "include",
         headers: { ...auth },

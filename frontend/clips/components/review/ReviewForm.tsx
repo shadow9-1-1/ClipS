@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { StarRating } from "@/components/review/StarRating";
 import type { ReviewItem } from "@/components/review/ReviewList";
-import { getApiBaseUrl } from "@/lib/api";
+import { getApiPrefix } from "@/lib/api";
 import { getBearerAuthHeader } from "@/lib/auth-headers";
 import { Spinner } from "@/components/ui/Spinner";
 import { useAuth } from "@/hooks/useAuth";
@@ -68,7 +68,7 @@ export function ReviewForm({
     setLoading(true);
     try {
       const res = await fetch(
-        `${getApiBaseUrl()}/api/v1/videos/${videoId}/reviews`,
+        `${getApiPrefix()}/v1/videos/${videoId}/reviews`,
         {
           method: "POST",
           credentials: "include",

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { VideoGrid, type VideoGridItem } from "@/components/video/VideoGrid";
 import { Spinner } from "@/components/ui/Spinner";
-import { getApiBaseUrl } from "@/lib/api";
+import { getApiPrefix } from "@/lib/api";
 
 const PAGE_SIZE = 10;
 
@@ -51,12 +51,9 @@ export function InfiniteVideoFeed() {
     setLoading(true);
 
     try {
-      const base = getApiBaseUrl();
-      const url = new URL(`${base}/api/v1/videos`);
-      url.searchParams.set("limit", String(PAGE_SIZE));
-      url.searchParams.set("skip", String(skipRef.current));
+      const url = `${getApiPrefix()}/v1/videos?limit=${PAGE_SIZE}&skip=${skipRef.current}`;
 
-      const res = await fetch(url.toString(), {
+      const res = await fetch(url, {
         credentials: "include",
         cache: "no-store",
       });

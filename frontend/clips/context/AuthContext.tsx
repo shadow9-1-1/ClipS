@@ -9,10 +9,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { getApiBaseUrl } from "@/lib/api";
+import { getApiPrefix } from "@/lib/api";
 import { getBearerAuthHeader } from "@/lib/auth-headers";
-
-const ME_PATH = "/api/v1/users/me";
 
 export type User = {
   id: string;
@@ -49,10 +47,10 @@ type FetchMeResult =
   | { kind: "unauthorized" }
   | { kind: "error"; message: string; retryable?: boolean };
 
-async function fetchMeOnce(baseUrl: string): Promise<FetchMeResult> {
+async function fetchMeOnce(apiPrefix: string): Promise<FetchMeResult> {
   let res: Response;
   try {
-    res = await fetch(`${baseUrl}${ME_PATH}`, {
+    res = await fetch(`${apiPrefix}/v1/users/me`, {
       method: "GET",
       credentials: "include",
       headers: {
@@ -89,12 +87,12 @@ async function fetchMeOnce(baseUrl: string): Promise<FetchMeResult> {
   return { kind: "ok", user };
 }
 
-async function fetchMeWithRetry(baseUrl: string): Promise<FetchMeResult> {
+async function fetchMeWithRetry(apiPrefix: string): Promise<FetchMeResult> {
   const maxAttempts = 3;
   let lastError = "Network error";
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const result = await fetchMeOnce(baseUrl);
+    const result = await fetchMeOnce(apiPrefix);
 
     if (result.kind !== "error") {
       return result;
@@ -132,8 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       setError(null);
 
-      const baseUrl = getApiBaseUrl();
-      const result = await fetchMeWithRetry(baseUrl);
+      const result = await fetchMeWithRetry(getApiPrefix());
 
       if (result.kind === "ok") {
         setUser(result.user);

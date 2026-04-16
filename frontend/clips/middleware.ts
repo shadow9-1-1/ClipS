@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
 
   if (!secret) {
     console.error(
-      "[middleware] JWT_SECRET is not set. Denying access to protected routes."
+      "[middleware] JWT_SECRET is not set. Add it to frontend/clips/.env.local (same value as backend/.env), then restart Next.js. Protected routes redirect to /login until then."
     );
     return loginRedirect(request);
   }
@@ -48,7 +48,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/upload",
     "/upload/:path*",
+    "/settings",
     "/settings/:path*",
     "/admin",
     "/admin/:path*",

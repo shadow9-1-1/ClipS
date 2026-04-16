@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useUI } from "@/context/UIContext";
-import { getApiBaseUrl } from "@/lib/api";
+import { getApiPrefix } from "@/lib/api";
 import { parseErrorFromUnknown } from "@/lib/parse-api-error";
 import { Spinner } from "@/components/ui/Spinner";
 import { VideoListSkeleton } from "@/components/ui/Skeleton";
@@ -14,7 +14,9 @@ type VideoRow = {
   owner?: { username?: string };
 };
 
-const VIDEOS_URL = `${getApiBaseUrl()}/api/v1/videos?limit=5&skip=0`;
+function videosListUrl(): string {
+  return `${getApiPrefix()}/v1/videos?limit=5&skip=0`;
+}
 
 export function ClipSDemoSection() {
   const { showError, showErrorFromResponse, showErrorFromUnknown } = useUI();
@@ -25,7 +27,7 @@ export function ClipSDemoSection() {
 
   const fetchVideos = useCallback(
     async (opts?: { signal?: AbortSignal }) => {
-      const res = await fetch(VIDEOS_URL, {
+      const res = await fetch(videosListUrl(), {
         credentials: "include",
         cache: "no-store",
         signal: opts?.signal,
@@ -79,7 +81,7 @@ export function ClipSDemoSection() {
   const simulateUnauthorizedSubmit = async () => {
     setSubmitBusy(true);
     try {
-      const res = await fetch(`${getApiBaseUrl()}/api/v1/videos`, {
+      const res = await fetch(`${getApiPrefix()}/v1/videos`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

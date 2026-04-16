@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { StatCard } from "@/components/admin/StatCard";
 import { Spinner } from "@/components/ui/Spinner";
-import { getApiBaseUrl } from "@/lib/api";
+import { getApiPrefix } from "@/lib/api";
 import { getBearerAuthHeader } from "@/lib/auth-headers";
 
 type AdminStats = {
@@ -78,17 +78,16 @@ export default function AdminDashboardPage() {
         return;
       }
 
-      const base = getApiBaseUrl();
       const headers = { ...auth };
 
       try {
         const [statsRes, healthRes] = await Promise.all([
-          fetch(`${base}/api/v1/admin/stats`, {
+          fetch(`${getApiPrefix()}/v1/admin/stats`, {
             credentials: "include",
             cache: "no-store",
             headers,
           }),
-          fetch(`${base}/api/v1/admin/health`, {
+          fetch(`${getApiPrefix()}/v1/admin/health`, {
             credentials: "include",
             cache: "no-store",
             headers,

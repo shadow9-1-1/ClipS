@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getApiBaseUrl } from "@/lib/api";
+import { getApiPrefix } from "@/lib/api";
 import { getBearerAuthHeader } from "@/lib/auth-headers";
 import { Spinner } from "@/components/ui/Spinner";
 
@@ -26,7 +26,7 @@ export function LikeButton({ videoId }: LikeButtonProps) {
         ...getBearerAuthHeader(),
       };
       const res = await fetch(
-        `${getApiBaseUrl()}/api/v1/videos/${videoId}/engagement`,
+        `${getApiPrefix()}/v1/videos/${videoId}/engagement`,
         { credentials: "include", cache: "no-store", headers }
       );
       if (!res.ok) return;
@@ -52,7 +52,7 @@ export function LikeButton({ videoId }: LikeButtonProps) {
         ...getBearerAuthHeader(),
       };
       const res = await fetch(
-        `${getApiBaseUrl()}/api/v1/videos/${videoId}/engagement`,
+        `${getApiPrefix()}/v1/videos/${videoId}/engagement`,
         { credentials: "include", cache: "no-store", headers }
       );
       if (!res.ok) return;
@@ -109,7 +109,7 @@ export function LikeButton({ videoId }: LikeButtonProps) {
     try {
       if (nextLiked) {
         const res = await fetch(
-          `${getApiBaseUrl()}/api/v1/videos/${videoId}/likes`,
+          `${getApiPrefix()}/v1/videos/${videoId}/likes`,
           {
             method: "POST",
             credentials: "include",
@@ -121,7 +121,7 @@ export function LikeButton({ videoId }: LikeButtonProps) {
         }
       } else {
         const res = await fetch(
-          `${getApiBaseUrl()}/api/v1/videos/${videoId}/likes`,
+          `${getApiPrefix()}/v1/videos/${videoId}/likes`,
           {
             method: "DELETE",
             credentials: "include",

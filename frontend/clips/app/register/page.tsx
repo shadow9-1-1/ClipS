@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Spinner } from "@/components/ui/Spinner";
-import { getApiBaseUrl } from "@/lib/api";
+import {
+  getApiPrefix,
+  getFetchErrorMessage,
+  readResponseJson,
+} from "@/lib/api";
 import {
   isValidEmail,
   validatePassword,
@@ -52,8 +56,7 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const baseUrl = getApiBaseUrl();
-      const res = await fetch(`${baseUrl}/api/v1/auth/register`, {
+      const res = await fetch(`${getApiPrefix()}/v1/auth/register`, {
         method: "POST",
         credentials: "include",
         headers: {
@@ -67,7 +70,7 @@ export default function RegisterPage() {
         }),
       });
 
-      const data = (await res.json()) as RegisterResponse;
+      const data = await readResponseJson<RegisterResponse>(res);
 
       if (!res.ok) {
         setError(
@@ -80,8 +83,8 @@ export default function RegisterPage() {
 
       router.push("/login");
       router.refresh();
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      setError(getFetchErrorMessage(err));
     } finally {
       setLoading(false);
     }
