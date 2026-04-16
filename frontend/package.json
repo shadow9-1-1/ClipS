@@ -4,6 +4,7 @@
   "description": "Delegates to the Next.js app in ./clips",
   "scripts": {
     "dev": "npm run dev --prefix clips",
+    "dev:webpack": "npm run dev:webpack --prefix clips",
     "build": "npm run build --prefix clips",
     "start": "npm run start --prefix clips",
     "lint": "npm run lint --prefix clips",
