@@ -72,7 +72,8 @@ const uploadBinary = async (req, res) => {
     status: 'success',
     message: 'Video uploaded successfully',
     data: {
-      file: uploaded,
+      file: uploaded.file,
+      video: uploaded.video,
     },
   });
 };

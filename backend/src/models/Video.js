@@ -24,6 +24,11 @@ const videoSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    videoObjectKey: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     duration: {
       type: Number,
       required: [true, 'Duration is required'],
@@ -44,6 +49,7 @@ const videoSchema = new mongoose.Schema(
 
 videoSchema.index({ owner: 1 });
 videoSchema.index({ status: 1, createdAt: -1 });
+videoSchema.index({ videoObjectKey: 1 });
 
 const Video = mongoose.model('Video', videoSchema);
 

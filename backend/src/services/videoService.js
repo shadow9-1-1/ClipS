@@ -4,7 +4,7 @@ const Follow = require('../models/Follow');
 const Review = require('../models/Review');
 const VideoLike = require('../models/VideoLike');
 const { sendNewVideoFromFollowedUserNotification } = require('./notificationService');
-const { uploadVideoObject } = require('./storageService');
+const { uploadVideoObject, deleteObject } = require('./storageService');
 const { validateVideoDuration } = require('./videoValidationService');
 
 const reviewCollection = Review.collection.name;
@@ -80,6 +80,7 @@ const buildFeedProjectionPipeline = ({ matchStage, recentSince }) => [
       title: 1,
       description: 1,
       videoURL: 1,
+      videoObjectKey: 1,
       duration: 1,
       viewsCount: 1,
       status: 1,
@@ -102,6 +103,7 @@ const createVideo = async (ownerId, payload) => {
     title: payload.title,
     description: payload.description,
     videoURL: payload.videoURL,
+    videoObjectKey: payload.videoObjectKey,
     duration: payload.duration,
     status: payload.status,
     owner: ownerId,
@@ -192,11 +194,52 @@ const getTrendingFeed = async ({ limit, skip }) => {
 const uploadVideoFile = async ({ ownerId, file }) => {
   const { duration } = await validateVideoDuration(file);
 
-  return uploadVideoObject({
+  const uploaded = await uploadVideoObject({
     file,
     ownerId,
     duration,
   });
+
+  let video;
+
+  try {
+    video = await Video.create({
+      title: file.originalname.replace(/\.[^/.]+$/, ''),
+      description: '',
+      videoURL: '',
+      videoObjectKey: uploaded.key,
+      duration,
+      status: 'public',
+      owner: ownerId,
+    });
+  } catch (dbErr) {
+    try {
+      await deleteObject({
+        bucket: uploaded.bucket,
+        key: uploaded.key,
+      });
+    } catch (cleanupErr) {
+      console.error('Failed to cleanup object after DB write failure:', cleanupErr.message);
+    }
+
+    throw dbErr;
+  }
+
+  if (video.status === 'public') {
+    try {
+      await sendNewVideoFromFollowedUserNotification({
+        creatorId: ownerId,
+        videoTitle: video.title,
+      });
+    } catch (notificationErr) {
+      console.error('Failed to send new video notification:', notificationErr.message);
+    }
+  }
+
+  return {
+    file: uploaded,
+    video,
+  };
 };
 
 const updateVideo = async (videoId, requesterId, payload) => {

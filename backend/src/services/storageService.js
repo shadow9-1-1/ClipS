@@ -2,6 +2,7 @@ const {
   S3Client,
   HeadBucketCommand,
   PutObjectCommand,
+  DeleteObjectCommand,
   GetObjectCommand,
   CreateBucketCommand,
 } = require('@aws-sdk/client-s3');
@@ -208,6 +209,17 @@ const uploadVideoObject = async ({ file, ownerId, bucket, duration }) => {
   };
 };
 
+const deleteObject = async ({ bucket, key }) => {
+  const targetBucket = bucket || storageConfig.bucket;
+
+  await s3Client.send(
+    new DeleteObjectCommand({
+      Bucket: targetBucket,
+      Key: key,
+    })
+  );
+};
+
 const testConnection = async () => {
   await ensureBucketExists(storageConfig.bucket);
 
@@ -222,6 +234,7 @@ module.exports = {
   testConnection,
   uploadBase64Object,
   uploadVideoObject,
+  deleteObject,
   generateTemporaryAccessUrl,
   getObjectForSecureAccess,
 };
