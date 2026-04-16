@@ -49,7 +49,21 @@ const unlikeVideo = async ({ videoId, userId }) => {
   return Boolean(like);
 };
 
+const getVideoEngagement = async (videoId, userId) => {
+  const likesCount = await VideoLike.countDocuments({ video: videoId });
+  let liked = false;
+  if (userId) {
+    const existing = await VideoLike.findOne({
+      video: videoId,
+      user: userId,
+    }).lean();
+    liked = Boolean(existing);
+  }
+  return { likesCount, liked };
+};
+
 module.exports = {
   likeVideo,
   unlikeVideo,
+  getVideoEngagement,
 };

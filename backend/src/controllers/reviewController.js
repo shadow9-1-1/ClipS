@@ -1,4 +1,4 @@
-const { createVideoReview } = require('../services/reviewService');
+const { createVideoReview, listVideoReviews } = require('../services/reviewService');
 
 const createReview = async (req, res) => {
   const review = await createVideoReview({
@@ -17,6 +17,17 @@ const createReview = async (req, res) => {
   });
 };
 
+const listReviews = async (req, res) => {
+  const reviews = await listVideoReviews(req.params.id);
+
+  res.status(200).json({
+    status: 'success',
+    results: reviews.length,
+    data: { reviews },
+  });
+};
+
 module.exports = {
   createReview,
+  listReviews,
 };

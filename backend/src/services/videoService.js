@@ -265,6 +265,34 @@ const updateVideo = async (videoId, requesterId, payload) => {
   return video;
 };
 
+const getPublicVideoById = async (videoId) => {
+  const video = await Video.findOne({
+    _id: videoId,
+    status: 'public',
+  })
+    .populate('owner', 'username')
+    .lean();
+
+  if (!video) {
+    return null;
+  }
+
+  return {
+    id: video._id.toString(),
+    title: video.title,
+    description: video.description,
+    videoURL: video.videoURL,
+    duration: video.duration,
+    viewsCount: video.viewsCount,
+    owner: {
+      id: video.owner?._id?.toString(),
+      username: video.owner?.username || '',
+    },
+    createdAt: video.createdAt,
+    updatedAt: video.updatedAt,
+  };
+};
+
 const deleteVideo = async (videoId, requesterId, requesterRole) => {
   const video = await Video.findById(videoId);
 
@@ -289,6 +317,7 @@ const deleteVideo = async (videoId, requesterId, requesterRole) => {
 module.exports = {
   createVideo,
   getVideos,
+  getPublicVideoById,
   getFollowingFeed,
   getTrendingFeed,
   uploadVideoFile,

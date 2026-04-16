@@ -46,6 +46,22 @@ const createVideoReview = async ({ videoId, userId, rating, comment }) => {
   };
 };
 
+const listVideoReviews = async (videoId) => {
+  const reviews = await Review.find({ video: videoId })
+    .sort({ createdAt: -1 })
+    .populate('user', 'username')
+    .lean();
+
+  return reviews.map((r) => ({
+    id: r._id.toString(),
+    rating: r.rating,
+    comment: r.comment,
+    username: r.user?.username || 'User',
+    createdAt: r.createdAt,
+  }));
+};
+
 module.exports = {
   createVideoReview,
+  listVideoReviews,
 };

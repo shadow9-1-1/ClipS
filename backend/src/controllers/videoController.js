@@ -1,6 +1,7 @@
 const {
   createVideo,
   getVideos,
+  getPublicVideoById,
   getFollowingFeed,
   getTrendingFeed,
   uploadVideoFile,
@@ -96,9 +97,25 @@ const remove = async (req, res) => {
   });
 };
 
+const getById = async (req, res) => {
+  const video = await getPublicVideoById(req.params.id);
+
+  if (!video) {
+    const err = new Error('Video not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  res.status(200).json({
+    status: 'success',
+    data: { video },
+  });
+};
+
 module.exports = {
   create,
   list,
+  getById,
   followingFeed,
   trendingFeed,
   uploadBinary,

@@ -1,4 +1,4 @@
-const { likeVideo, unlikeVideo } = require('../services/likeService');
+const { likeVideo, unlikeVideo, getVideoEngagement } = require('../services/likeService');
 
 const like = async (req, res) => {
   const likeEntry = await likeVideo({
@@ -27,7 +27,18 @@ const unlike = async (req, res) => {
   });
 };
 
+const getEngagement = async (req, res) => {
+  const userId = req.user?._id;
+  const engagement = await getVideoEngagement(req.params.id, userId);
+
+  res.status(200).json({
+    status: 'success',
+    data: engagement,
+  });
+};
+
 module.exports = {
   like,
   unlike,
+  getEngagement,
 };
