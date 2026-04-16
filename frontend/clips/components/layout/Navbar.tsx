@@ -43,6 +43,13 @@ export function Navbar() {
   const { user, loading } = useAuth();
   const pathname = usePathname();
 
+  const links = [
+    ...navLinks,
+    ...(user?.role === "admin"
+      ? ([{ href: "/admin", label: "Admin" }] as const)
+      : []),
+  ];
+
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
@@ -70,7 +77,7 @@ export function Navbar() {
           className="hidden items-center gap-1 md:flex"
           aria-label="Main navigation"
         >
-          {navLinks.map(({ href, label }) => (
+          {links.map(({ href, label }) => (
             <NavLink key={href} href={href} label={label} />
           ))}
           {!loading && !user ? (
@@ -132,7 +139,7 @@ export function Navbar() {
           className="border-t border-zinc-200 bg-white px-4 py-3 md:hidden dark:border-zinc-800 dark:bg-zinc-950"
         >
           <nav className="flex flex-col gap-1" aria-label="Mobile navigation">
-            {navLinks.map(({ href, label }) => (
+            {links.map(({ href, label }) => (
               <NavLink
                 key={href}
                 href={href}
