@@ -13,15 +13,22 @@ type ApiVideo = {
   description?: string;
   videoURL?: string;
   duration?: number;
+  owner?: { _id?: string } | string;
 };
 
 function mapApiVideo(v: ApiVideo): VideoGridItem {
+  let ownerId: string | undefined;
+  if (v.owner && typeof v.owner === "object" && v.owner._id) {
+    ownerId = String(v.owner._id);
+  }
+
   return {
     id: String(v._id ?? ""),
     videoUrl: typeof v.videoURL === "string" ? v.videoURL : "",
     title: typeof v.title === "string" ? v.title : "Untitled",
     description: typeof v.description === "string" ? v.description : "",
     duration: typeof v.duration === "number" ? v.duration : 0,
+    ownerId,
   };
 }
 

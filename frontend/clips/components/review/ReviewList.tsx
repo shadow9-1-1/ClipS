@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { StarRating } from "@/components/review/StarRating";
+import { ReviewOwnerActions } from "@/components/review/ReviewOwnerActions";
 import { getApiBaseUrl } from "@/lib/api";
 import { Spinner } from "@/components/ui/Spinner";
 
 export type ReviewItem = {
   id: string;
   username: string;
+  /** Author user id (for ownership UI); optional for older payloads */
+  userId?: string;
   rating: number;
   comment: string;
   createdAt?: string;
@@ -126,6 +129,9 @@ export function ReviewList({
             <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
               {r.comment}
             </p>
+          ) : null}
+          {!r.pending ? (
+            <ReviewOwnerActions authorUserId={r.userId} />
           ) : null}
         </li>
       ))}

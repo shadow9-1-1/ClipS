@@ -53,6 +53,7 @@ export function ReviewForm({
     const optimistic: ReviewItem = {
       id: tempId,
       username: displayName,
+      userId: user?.id,
       rating,
       comment: comment.trim(),
       pending: true,

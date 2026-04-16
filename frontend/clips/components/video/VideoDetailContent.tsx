@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { VideoPlayer } from "@/components/video/VideoPlayer";
+import { VideoOwnerActions } from "@/components/video/VideoOwnerActions";
 import { LikeButton } from "@/components/video/LikeButton";
 import { ReviewForm } from "@/components/review/ReviewForm";
 import { ReviewList, type ReviewItem } from "@/components/review/ReviewList";
@@ -13,6 +14,7 @@ type VideoDetailContentProps = {
     title: string;
     description: string;
     duration: number;
+    ownerId?: string | null;
   };
 };
 
@@ -29,6 +31,9 @@ export function VideoDetailContent({ video }: VideoDetailContentProps) {
         title={video.title}
         description={video.description}
         duration={video.duration}
+        ownerActions={
+          <VideoOwnerActions videoId={video.id} ownerId={video.ownerId} />
+        }
       />
 
       <div className="mt-10 space-y-8">

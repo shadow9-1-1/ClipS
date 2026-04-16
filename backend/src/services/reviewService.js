@@ -52,13 +52,25 @@ const listVideoReviews = async (videoId) => {
     .populate('user', 'username')
     .lean();
 
-  return reviews.map((r) => ({
-    id: r._id.toString(),
-    rating: r.rating,
-    comment: r.comment,
-    username: r.user?.username || 'User',
-    createdAt: r.createdAt,
-  }));
+  return reviews.map((r) => {
+    let userId = '';
+    if (r.user && typeof r.user === 'object' && !Array.isArray(r.user) && r.user._id) {
+      userId = r.user._id.toString();
+    } else if (r.user) {
+      userId = String(r.user);
+    }
+    return {
+      id: r._id.toString(),
+      userId,
+      rating: r.rating,
+      comment: r.comment,
+      username:
+        typeof r.user === 'object' && r.user !== null && r.user.username
+          ? r.user.username
+          : 'User',
+      createdAt: r.createdAt,
+    };
+  });
 };
 
 module.exports = {

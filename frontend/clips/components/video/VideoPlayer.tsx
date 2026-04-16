@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 /**
  * Formats a duration in seconds as `m:mm` / `mm:ss` (always minutes:seconds).
  */
@@ -14,6 +16,8 @@ export type VideoPlayerProps = {
   description: string;
   /** Duration in seconds (shown in the bottom-right overlay as mm:ss) */
   duration: number;
+  /** Owner-only actions (e.g. Edit / Delete), rendered below the description */
+  ownerActions?: ReactNode;
 };
 
 export function VideoPlayer({
@@ -21,6 +25,7 @@ export function VideoPlayer({
   title,
   description,
   duration,
+  ownerActions,
 }: VideoPlayerProps) {
   const durationLabel = formatDuration(duration);
 
@@ -52,6 +57,7 @@ export function VideoPlayer({
       <p className="mt-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
         {description}
       </p>
+      {ownerActions ? <div className="mt-4">{ownerActions}</div> : null}
     </article>
   );
 }

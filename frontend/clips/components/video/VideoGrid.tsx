@@ -1,5 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { formatDuration } from "@/components/video/VideoPlayer";
+import { VideoOwnerActions } from "@/components/video/VideoOwnerActions";
 
 export type VideoGridItem = {
   id: string;
@@ -7,6 +10,7 @@ export type VideoGridItem = {
   title: string;
   description: string;
   duration: number;
+  ownerId?: string;
 };
 
 export type VideoGridProps = {
@@ -45,6 +49,9 @@ function VideoGridCard({ item }: { item: VideoGridItem }) {
           <p className="line-clamp-2 text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
             {item.description}
           </p>
+          <div className="mt-2 border-t border-zinc-200 pt-2 dark:border-zinc-700">
+            <VideoOwnerActions videoId={item.id} ownerId={item.ownerId} />
+          </div>
         </div>
       </article>
     </li>

@@ -4,8 +4,8 @@ import { ClipSDemoSection } from "@/components/ClipSDemoSection";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+    <div className="flex flex-1 flex-col items-center font-sans">
+      <main className="flex w-full max-w-3xl flex-1 flex-col items-center justify-between gap-10 rounded-2xl border border-zinc-200 bg-white px-6 py-12 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40 sm:items-start sm:px-10 sm:py-16">
         <Image
           className="dark:invert"
           src="/next.svg"

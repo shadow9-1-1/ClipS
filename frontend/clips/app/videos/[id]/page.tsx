@@ -44,6 +44,7 @@ export default async function VideoDetailPage({
         description: video.description ?? "",
         videoUrl: video.videoURL,
         duration: video.duration,
+        ownerId: video.owner?.id ?? null,
       }}
     />
   );
