@@ -1549,6 +1549,9 @@
                   "pm.expect(res.data.file).to.have.property('key');",
                   "pm.expect(res.data.file).to.have.property('accessUrl');",
                   "pm.expect(res.data.file).to.have.property('expiresIn');",
+                  "pm.expect(res.data).to.have.property('video');",
+                  "pm.expect(res.data.video).to.have.property('videoObjectKey');",
+                  "pm.expect(res.data.video.videoObjectKey).to.eql(res.data.file.key);",
                   "pm.environment.set('uploadedVideoKey', res.data.file.key);",
                   "pm.environment.set('uploadedVideoAccessUrl', res.data.file.accessUrl);"
                 ],
