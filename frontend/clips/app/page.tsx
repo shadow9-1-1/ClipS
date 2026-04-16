@@ -1,4 +1,6 @@
 import Image from "next/image";
+import { AuthExample } from "@/components/AuthExample";
+import { ClipSDemoSection } from "@/components/ClipSDemoSection";
 
 export default function Home() {
   return (
@@ -13,6 +15,13 @@ export default function Home() {
           priority
         />
         <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
+          <div className="w-full rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-left dark:border-zinc-800 dark:bg-zinc-900/40">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500">
+              Auth (useAuth example)
+            </p>
+            <AuthExample />
+          </div>
+          <ClipSDemoSection />
           <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
             To get started, edit the page.tsx file.
           </h1>
