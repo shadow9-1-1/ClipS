@@ -1,19 +1,16 @@
 import { VideoPlayer } from "@/components/video/VideoPlayer";
 
 /**
- * Example page: pass a URL from your API (e.g. MinIO presigned URL or `/api/v1/...` proxy).
- * Sample asset below is a small public-domain clip for local testing only.
+ * Example: render the player on a detail or feed page.
+ * Use `videoUrl` from your API (presigned MinIO URL, storage proxy, etc.).
  */
 export default function WatchExamplePage() {
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col px-4 py-8 sm:px-6">
-      <h1 className="mb-6 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
-        Video example
-      </h1>
+    <main className="flex min-h-[60vh] w-full flex-1 flex-col items-center px-4 py-10 sm:px-6">
       <VideoPlayer
         videoUrl="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-        title="Sample clip (MDN)"
-        description="Minimal HTML5 video player with title, description, and a duration badge. Replace the URL with your Phase 2 video URL from storage or the backend."
+        title="Sample clip"
+        description="Phase 2 layout: centered column, native controls, duration overlay, and muted description text below."
         duration={6}
       />
     </main>
