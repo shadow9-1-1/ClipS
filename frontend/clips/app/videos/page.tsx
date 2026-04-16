@@ -1,39 +1,4 @@
-import { VideoGrid, type VideoGridItem } from "@/components/video/VideoGrid";
-
-const SAMPLE: VideoGridItem[] = [
-  {
-    id: "1",
-    videoUrl:
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-    title: "Flower sample",
-    description: "Short CC0 clip for layout testing.",
-    duration: 6,
-  },
-  {
-    id: "2",
-    videoUrl:
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-    title: "Another row (same asset)",
-    description: "Grid maps multiple items; swap URLs from your API.",
-    duration: 6,
-  },
-  {
-    id: "3",
-    videoUrl:
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-    title: "Third card",
-    description: "Responsive columns: 1 · 2 · 3 · 4 by breakpoint.",
-    duration: 6,
-  },
-  {
-    id: "4",
-    videoUrl:
-      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-    title: "Fourth card",
-    description: "max-w-6xl container with gap-6 spacing.",
-    duration: 6,
-  },
-];
+import { InfiniteVideoFeed } from "@/components/video/InfiniteVideoFeed";
 
 export default function VideosPage() {
   return (
@@ -42,8 +7,14 @@ export default function VideosPage() {
         <h1 className="mx-auto max-w-6xl text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
           Videos
         </h1>
+        <p className="mx-auto mt-1 max-w-6xl text-sm text-zinc-500 dark:text-zinc-400">
+          Scroll to load more — paginated from{" "}
+          <code className="rounded bg-zinc-100 px-1 dark:bg-zinc-800">
+            GET /api/v1/videos?limit=10&amp;skip=…
+          </code>
+        </p>
       </div>
-      <VideoGrid videos={SAMPLE} />
+      <InfiniteVideoFeed />
     </main>
   );
 }

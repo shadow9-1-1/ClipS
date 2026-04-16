@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { formatDuration } from "@/components/video/VideoPlayer";
 
 export type VideoGridItem = {
@@ -10,6 +11,8 @@ export type VideoGridItem = {
 
 export type VideoGridProps = {
   videos: VideoGridItem[];
+  /** Rendered below the grid (e.g. infinite-scroll sentinel) */
+  footer?: ReactNode;
 };
 
 function VideoGridCard({ item }: { item: VideoGridItem }) {
@@ -48,7 +51,7 @@ function VideoGridCard({ item }: { item: VideoGridItem }) {
   );
 }
 
-export function VideoGrid({ videos }: VideoGridProps) {
+export function VideoGrid({ videos, footer }: VideoGridProps) {
   if (videos.length === 0) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
@@ -69,6 +72,7 @@ export function VideoGrid({ videos }: VideoGridProps) {
           <VideoGridCard key={item.id} item={item} />
         ))}
       </ul>
+      {footer ? <div className="mt-2">{footer}</div> : null}
     </div>
   );
 }
