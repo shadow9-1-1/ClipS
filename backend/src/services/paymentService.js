@@ -1,4 +1,5 @@
 const Stripe = require('stripe');
+const mongoose = require('mongoose');
 
 const Payment = require('../models/Payment');
 const Transaction = require('../models/Transaction');
@@ -173,8 +174,46 @@ const handleCheckoutSessionCompleted = async (session, eventId) => {
   }
 };
 
+const getCreatorBalance = async (userId) => {
+  if (!userId) {
+    const err = new Error('User id is required');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const creatorId =
+    typeof userId === 'string' ? new mongoose.Types.ObjectId(userId) : userId;
+
+  const [result] = await Transaction.aggregate([
+    { $match: { userId: creatorId } },
+    {
+      $group: {
+        _id: null,
+        completed: {
+          $sum: {
+            $cond: [{ $eq: ['$status', 'complete'] }, '$amount', 0],
+          },
+        },
+        pending: {
+          $sum: {
+            $cond: [{ $eq: ['$status', 'pending'] }, '$amount', 0],
+          },
+        },
+        total: { $sum: '$amount' },
+      },
+    },
+  ]);
+
+  return {
+    availableBalance: result?.completed || 0,
+    pendingBalance: result?.pending || 0,
+    totalBalance: result?.total || 0,
+  };
+};
+
 module.exports = {
   createTipCheckoutSession,
   constructStripeEvent,
   handleCheckoutSessionCompleted,
+  getCreatorBalance,
 };

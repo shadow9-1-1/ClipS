@@ -2,6 +2,7 @@ const {
   createTipCheckoutSession,
   constructStripeEvent,
   handleCheckoutSessionCompleted,
+  getCreatorBalance,
 } = require('../services/paymentService');
 
 const createSession = async (req, res) => {
@@ -50,7 +51,17 @@ const handleWebhook = async (req, res) => {
   return res.status(200).json({ received: true });
 };
 
+const getBalance = async (req, res) => {
+  const balance = await getCreatorBalance(req.user._id);
+
+  res.status(200).json({
+    status: 'success',
+    data: balance,
+  });
+};
+
 module.exports = {
   createSession,
   handleWebhook,
+  getBalance,
 };
