@@ -102,6 +102,31 @@ const createSocketServer = (httpServer) => {
       `Socket connected ${socket.id}${userId ? ` user:${userId}` : ''}`
     );
 
+    socket.on('health', (payload, callback) => {
+      const response = {
+        ok: true,
+        serverTime: new Date().toISOString(),
+        userId: userId || null,
+        echo: payload ?? null,
+      };
+
+      if (typeof callback === 'function') {
+        callback(response);
+        return;
+      }
+
+      socket.emit('health', response);
+    });
+
+    socket.on('echo', (payload, callback) => {
+      if (typeof callback === 'function') {
+        callback({ ok: true, echo: payload ?? null });
+        return;
+      }
+
+      socket.emit('echo', payload ?? null);
+    });
+
     socket.on('disconnect', (reason) => {
       console.log(`Socket disconnected ${socket.id} reason:${reason}`);
     });
