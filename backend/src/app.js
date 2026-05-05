@@ -8,6 +8,7 @@ const routes = require('./routes');
 const healthRoutes = require('./routes/healthRoutes');
 const { handleWebhook } = require('./controllers/paymentController');
 const errorHandler = require('./middleware/errorHandler');
+const { apiLimiter } = require('./middleware/rateLimiters');
 const { swaggerSpec } = require('./config/swagger');
 
 const app = express();
@@ -79,6 +80,8 @@ app.use(
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan(':method :url :status'));
 }
+
+app.use(apiLimiter);
 
 app.use('/health', healthRoutes);
 app.use('/api/v1', routes);

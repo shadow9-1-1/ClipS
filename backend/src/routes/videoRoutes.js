@@ -8,6 +8,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const protect = require('../middleware/protect');
 const { handleVideoUpload } = require('../middleware/uploadVideo');
 const validateRequest = require('../middleware/validateRequest');
+const { uploadLimiter } = require('../middleware/rateLimiters');
 const {
 	createVideoSchema,
 	updateVideoSchema,
@@ -20,7 +21,13 @@ const { createReviewSchema } = require('../utils/reviewSchemas');
 const router = express.Router();
 
 router.post('/', asyncHandler(protect), validateRequest(createVideoSchema), asyncHandler(create));
-router.post('/upload', asyncHandler(protect), handleVideoUpload('video'), asyncHandler(uploadBinary));
+router.post(
+	'/upload',
+	asyncHandler(protect),
+	uploadLimiter,
+	handleVideoUpload('video'),
+	asyncHandler(uploadBinary)
+);
 router.get('/', validateRequest(getVideosSchema), asyncHandler(list));
 router.get('/feed/following', asyncHandler(protect), validateRequest(getFeedSchema), asyncHandler(followingFeed));
 router.get('/feed/trending', validateRequest(getFeedSchema), asyncHandler(trendingFeed));
