@@ -83,6 +83,7 @@ const authenticateSocket = async (socket) => {
   }
 
   socket.data.user = user;
+  socket.data.userId = user._id.toString();
 };
 
 const createSocketServer = (httpServer) => {
@@ -97,7 +98,10 @@ const createSocketServer = (httpServer) => {
   });
 
   io.on('connection', (socket) => {
-    const userId = socket.data?.user?.id;
+    const userId = socket.data?.userId || socket.data?.user?.id;
+    if (userId) {
+      socket.join(userId);
+    }
     console.log(
       `Socket connected ${socket.id}${userId ? ` user:${userId}` : ''}`
     );
