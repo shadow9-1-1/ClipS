@@ -12,14 +12,33 @@ const protect = require('../middleware/protect');
 const restrictTo = require('../middleware/restrictTo');
 const validateRequest = require('../middleware/validateRequest');
 const { updateUserStatusSchema } = require('../utils/adminSchemas');
+const { emptySchema } = require('../utils/commonSchemas');
 
 const router = express.Router();
 
-router.get('/overview', asyncHandler(protect), restrictTo('admin'), asyncHandler(getAdminOverview));
-router.get('/health', asyncHandler(protect), restrictTo('admin'), asyncHandler(getAdminHealth));
+router.get(
+    '/overview',
+    asyncHandler(protect),
+    restrictTo('admin'),
+    validateRequest(emptySchema),
+    asyncHandler(getAdminOverview)
+);
+router.get(
+    '/health',
+    asyncHandler(protect),
+    restrictTo('admin'),
+    validateRequest(emptySchema),
+    asyncHandler(getAdminHealth)
+);
 
 // Admin statistics endpoint
-router.get('/stats', asyncHandler(protect), restrictTo('admin'), asyncHandler(getStats));
+router.get(
+    '/stats',
+    asyncHandler(protect),
+    restrictTo('admin'),
+    validateRequest(emptySchema),
+    asyncHandler(getStats)
+);
 
 // Update user status endpoint
 router.patch(
@@ -31,6 +50,12 @@ router.patch(
 );
 
 // Moderation queue endpoint
-router.get('/moderation', asyncHandler(protect), restrictTo('admin'), asyncHandler(getModerationItems));
+router.get(
+    '/moderation',
+    asyncHandler(protect),
+    restrictTo('admin'),
+    validateRequest(emptySchema),
+    asyncHandler(getModerationItems)
+);
 
 module.exports = router;

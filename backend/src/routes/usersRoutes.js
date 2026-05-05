@@ -6,10 +6,11 @@ const asyncHandler = require('../utils/asyncHandler');
 const protect = require('../middleware/protect');
 const validateRequest = require('../middleware/validateRequest');
 const { updateMeSchema, userIdParamSchema, updatePreferencesSchema } = require('../utils/userSchemas');
+const { emptySchema } = require('../utils/commonSchemas');
 
 const router = express.Router();
 
-router.get('/me', asyncHandler(protect), asyncHandler(getMe));
+router.get('/me', asyncHandler(protect), validateRequest(emptySchema), asyncHandler(getMe));
 router.patch('/updateMe', asyncHandler(protect), validateRequest(updateMeSchema), asyncHandler(updateMe));
 router.patch('/preferences', asyncHandler(protect), validateRequest(updatePreferencesSchema), asyncHandler(updatePreferences));
 
