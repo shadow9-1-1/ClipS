@@ -1,6 +1,7 @@
 const Stripe = require('stripe');
 
 const Payment = require('../models/Payment');
+const Transaction = require('../models/Transaction');
 const Video = require('../models/Video');
 
 let stripeClient = null;
@@ -78,6 +79,15 @@ const createTipCheckoutSession = async ({
     }
   }
 
+  let transaction = null;
+  if (video?.owner) {
+    transaction = await Transaction.create({
+      userId: video.owner,
+      amount: amountCents / 100,
+      status: 'pending',
+    });
+  }
+
   const metadata = {};
   if (video) {
     metadata.videoId = video._id.toString();
@@ -85,6 +95,9 @@ const createTipCheckoutSession = async ({
   }
   if (tipper?._id) {
     metadata.tipperId = tipper._id.toString();
+  }
+  if (transaction?._id) {
+    metadata.transactionId = transaction._id.toString();
   }
 
   const session = await stripe.checkout.sessions.create({
@@ -131,14 +144,9 @@ const handleCheckoutSessionCompleted = async (session, eventId) => {
 
   const insertDefaults = {
     stripeSessionId: session.id,
-    amount: amountCents ? amountCents / 100 : 0,
-    amountCents: amountCents || 0,
-    currency,
-    status: 'succeeded',
     video: metadata.videoId || undefined,
     owner: metadata.ownerId || undefined,
     tipper: metadata.tipperId || undefined,
-    tipperEmail: update.tipperEmail,
   };
 
   await Payment.findOneAndUpdate(
@@ -149,6 +157,20 @@ const handleCheckoutSessionCompleted = async (session, eventId) => {
     },
     { upsert: true, new: true }
   );
+
+  if (metadata.transactionId) {
+    await Transaction.findByIdAndUpdate(metadata.transactionId, {
+      status: 'complete',
+      stripePaymentIntentId: session.payment_intent || undefined,
+    });
+  } else if (metadata.ownerId) {
+    await Transaction.create({
+      userId: metadata.ownerId,
+      amount: amountCents ? amountCents / 100 : 0,
+      status: 'complete',
+      stripePaymentIntentId: session.payment_intent || undefined,
+    });
+  }
 };
 
 module.exports = {
