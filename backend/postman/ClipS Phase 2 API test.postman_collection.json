@@ -261,6 +261,70 @@
           "response": []
         },
         {
+          "name": "User Login 2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "const res = pm.response.json();\r",
+                  "pm.test('Login returns JWT', function () {\r",
+                  "  pm.expect(res.status).to.eql('success');\r",
+                  "  pm.expect(res.data).to.have.property('token');\r",
+                  "});\r",
+                  "\r",
+                  "pm.environment.set('token2', res.data.token);\r",
+                  "pm.environment.set('userId2', res.data.user.id);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"email\": \"{{email2}}\",\r\n  \"password\": \"{{password}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Admin Login",
           "event": [
             {
@@ -989,8 +1053,12 @@
             {
               "listen": "prerequest",
               "script": {
-                "exec": [],
-                "type": "text/javascript"
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -999,7 +1067,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{token}}",
+                "value": "Bearer {{token2}}",
                 "type": "text"
               }
             ],
@@ -1041,8 +1109,12 @@
             {
               "listen": "prerequest",
               "script": {
-                "exec": [],
-                "type": "text/javascript"
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -1051,7 +1123,7 @@
             "header": [
               {
                 "key": "Authorization",
-                "value": "Bearer {{token}}",
+                "value": "Bearer {{token2}}",
                 "type": "text"
               }
             ],
@@ -1068,724 +1140,6 @@
                 "likes"
               ]
             }
-          },
-          "response": []
-        },
-        {
-          "name": "Following Feed",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status code is 200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const res = pm.response.json();",
-                  "pm.expect(res.status).to.eql('success');",
-                  "pm.expect(res.feedType).to.eql('following');",
-                  "pm.expect(res).to.have.property('results');",
-                  "pm.expect(res).to.have.property('total');",
-                  "pm.expect(res.data).to.have.property('videos');",
-                  "pm.expect(res.data.videos).to.be.an('array');",
-                  "if (res.data.videos.length > 0) {",
-                  "  pm.expect(res.data.videos[0]).to.have.property('averageRating');",
-                  "  pm.expect(res.data.videos[0]).to.have.property('recentEngagement');",
-                  "  pm.expect(res.data.videos[0]).to.have.property('owner');",
-                  "}"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "exec": [],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/videos/feed/following?limit=20&skip=0",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "videos",
-                "feed",
-                "following"
-              ],
-              "query": [
-                {
-                  "key": "limit",
-                  "value": "20"
-                },
-                {
-                  "key": "skip",
-                  "value": "0"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Trending Feed",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status code is 200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const res = pm.response.json();",
-                  "pm.expect(res.status).to.eql('success');",
-                  "pm.expect(res.feedType).to.eql('trending');",
-                  "pm.expect(res).to.have.property('results');",
-                  "pm.expect(res).to.have.property('total');",
-                  "pm.expect(res.data).to.have.property('videos');",
-                  "pm.expect(res.data.videos).to.be.an('array');",
-                  "if (res.data.videos.length > 0) {",
-                  "  pm.expect(res.data.videos[0]).to.have.property('averageRating');",
-                  "  pm.expect(res.data.videos[0]).to.have.property('recentEngagement');",
-                  "  pm.expect(res.data.videos[0]).to.have.property('owner');",
-                  "}"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "exec": [],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/videos/feed/trending?limit=20&skip=0",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "videos",
-                "feed",
-                "trending"
-              ],
-              "query": [
-                {
-                  "key": "limit",
-                  "value": "20"
-                },
-                {
-                  "key": "skip",
-                  "value": "0"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Storage Health",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status code is 200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const res = pm.response.json();",
-                  "pm.expect(res.status).to.eql('success');",
-                  "pm.expect(res.data.status).to.eql('connected');",
-                  "pm.expect(res.data).to.have.property('endpoint');",
-                  "pm.expect(res.data).to.have.property('bucket');"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "exec": [],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}",
-                "type": "text"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/storage/health",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "storage",
-                "health"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Storage Test Upload",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status code is 201', function () {",
-                  "  pm.response.to.have.status(201);",
-                  "});",
-                  "const res = pm.response.json();",
-                  "pm.expect(res.status).to.eql('success');",
-                  "pm.expect(res.message).to.eql('File uploaded to object storage successfully');",
-                  "pm.expect(res.data).to.have.property('bucket');",
-                  "pm.expect(res.data).to.have.property('key');",
-                  "pm.expect(res.data).to.have.property('url');",
-                  "pm.expect(res.data.bucket).to.eql('media');",
-                  "pm.environment.set('storageObjectKey', res.data.key);",
-                  "pm.environment.set('storageObjectUrl', res.data.url);"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "exec": [],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"filename\": \"postman-test-upload.txt\",\n  \"base64Data\": \"SGVsbG8gZnJvbSBQb3N0bWFuIGFuZCBNaW5JTyBTMyBTREs=\",\n  \"contentType\": \"text/plain\",\n  \"bucket\": \"media\",\n  \"keyPrefix\": \"postman-tests\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/storage/test-upload",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "storage",
-                "test-upload"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Storage Generate Presigned URL",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status code is 200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "const res = pm.response.json();",
-                  "pm.expect(res.status).to.eql('success');",
-                  "pm.expect(res.data).to.have.property('accessUrl');",
-                  "pm.expect(res.data).to.have.property('expiresIn');",
-                  "pm.expect(res.data).to.have.property('expiresAt');",
-                  "pm.environment.set('storageAccessUrl', res.data.accessUrl);",
-                  "const parsed = new URL(res.data.accessUrl);",
-                  "pm.environment.set('storageAccessBucket', parsed.searchParams.get('bucket'));",
-                  "pm.environment.set('storageAccessKey', parsed.searchParams.get('key'));",
-                  "pm.environment.set('storageAccessExpiresAt', parsed.searchParams.get('expiresAt'));",
-                  "pm.environment.set('storageAccessSignature', parsed.searchParams.get('signature'));"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "exec": [],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"key\": \"{{storageObjectKey}}\",\n  \"bucket\": \"media\",\n  \"expiresIn\": 300\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/storage/presigned-url",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "storage",
-                "presigned-url"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Storage Access Via Signed URL",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status code is 200', function () {",
-                  "  pm.response.to.have.status(200);",
-                  "});",
-                  "pm.test('Body contains uploaded content', function () {",
-                  "  const body = pm.response.text();",
-                  "  pm.expect(body).to.include('Hello from Postman and MinIO S3 SDK');",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "exec": [],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/storage/access?bucket={{storageAccessBucket}}&key={{storageAccessKey}}&expiresAt={{storageAccessExpiresAt}}&signature={{storageAccessSignature}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "storage",
-                "access"
-              ],
-              "query": [
-                {
-                  "key": "bucket",
-                  "value": "{{storageAccessBucket}}"
-                },
-                {
-                  "key": "key",
-                  "value": "{{storageAccessKey}}"
-                },
-                {
-                  "key": "expiresAt",
-                  "value": "{{storageAccessExpiresAt}}"
-                },
-                {
-                  "key": "signature",
-                  "value": "{{storageAccessSignature}}"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Storage Access Tampered Signature",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status code is 403', function () {",
-                  "  pm.response.to.have.status(403);",
-                  "});",
-                  "const res = pm.response.json();",
-                  "pm.expect(res.status).to.eql('error');",
-                  "pm.expect(res.message).to.eql('Invalid or tampered access URL');"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "exec": [],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/storage/access?bucket={{storageAccessBucket}}&key={{storageAccessKey}}&expiresAt={{storageAccessExpiresAt}}&signature={{storageAccessSignature}}x",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "storage",
-                "access"
-              ],
-              "query": [
-                {
-                  "key": "bucket",
-                  "value": "{{storageAccessBucket}}"
-                },
-                {
-                  "key": "key",
-                  "value": "{{storageAccessKey}}"
-                },
-                {
-                  "key": "expiresAt",
-                  "value": "{{storageAccessExpiresAt}}"
-                },
-                {
-                  "key": "signature",
-                  "value": "{{storageAccessSignature}}x"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Video Upload Multipart (Valid MP4)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status code is 201', function () {",
-                  "  pm.response.to.have.status(201);",
-                  "});",
-                  "const res = pm.response.json();",
-                  "pm.expect(res.status).to.eql('success');",
-                  "pm.expect(res.message).to.eql('Video uploaded successfully');",
-                  "pm.expect(res.data).to.have.property('file');",
-                  "pm.expect(res.data.file).to.have.property('bucket');",
-                  "pm.expect(res.data.file).to.have.property('key');",
-                  "pm.expect(res.data.file).to.have.property('accessUrl');",
-                  "pm.expect(res.data.file).to.have.property('expiresIn');",
-                  "pm.expect(res.data).to.have.property('video');",
-                  "pm.expect(res.data.video).to.have.property('videoObjectKey');",
-                  "pm.expect(res.data.video.videoObjectKey).to.eql(res.data.file.key);",
-                  "pm.environment.set('uploadedVideoKey', res.data.file.key);",
-                  "pm.environment.set('uploadedVideoAccessUrl', res.data.file.accessUrl);"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "exec": [],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "video",
-                  "type": "file",
-                  "src": "{{mp4FilePath}}"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/videos/upload",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "videos",
-                "upload"
-              ]
-            },
-            "description": "Requires environment variable mp4FilePath pointing to a local .mp4 file."
-          },
-          "response": []
-        },
-        {
-          "name": "Video Upload Multipart (Invalid MIME)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status code is 400', function () {",
-                  "  pm.response.to.have.status(400);",
-                  "});",
-                  "const res = pm.response.json();",
-                  "pm.expect(res.status).to.eql('error');",
-                  "pm.expect(res.message).to.eql('Only video/mp4 files are allowed');"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "exec": [],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "video",
-                  "type": "file",
-                  "src": "{{nonMp4FilePath}}"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/videos/upload",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "videos",
-                "upload"
-              ]
-            },
-            "description": "Requires environment variable nonMp4FilePath (e.g., .txt or .jpg)."
-          },
-          "response": []
-        },
-        {
-          "name": "Video Upload Multipart (File Too Large)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status code is 413', function () {",
-                  "  pm.response.to.have.status(413);",
-                  "});",
-                  "const res = pm.response.json();",
-                  "pm.expect(res.status).to.eql('error');",
-                  "pm.expect(res.message).to.include('File too large.');"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "exec": [],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "video",
-                  "type": "file",
-                  "src": "{{largeMp4FilePath}}"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/videos/upload",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "videos",
-                "upload"
-              ]
-            },
-            "description": "Requires environment variable largeMp4FilePath larger than MAX_VIDEO_UPLOAD_BYTES."
-          },
-          "response": []
-        },
-        {
-          "name": "Video Upload Multipart (Duration > 5 Minutes)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status code is 400', function () {",
-                  "  pm.response.to.have.status(400);",
-                  "});",
-                  "const res = pm.response.json();",
-                  "pm.expect(res.status).to.eql('error');",
-                  "pm.expect(res.message).to.include('Video duration exceeds 300 seconds');"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "exec": [],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "video",
-                  "type": "file",
-                  "src": "{{longDurationMp4FilePath}}"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/v1/videos/upload",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "videos",
-                "upload"
-              ]
-            },
-            "description": "Requires environment variable longDurationMp4FilePath pointing to an .mp4 file longer than 300 seconds."
           },
           "response": []
         }
@@ -3031,6 +2385,514 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "S3 Storage",
+      "item": [
+        {
+          "name": "Storage Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {\r",
+                  "  pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "const res = pm.response.json();\r",
+                  "pm.expect(res.status).to.eql('success');\r",
+                  "pm.expect(res.data.status).to.eql('connected');\r",
+                  "pm.expect(res.data).to.have.property('endpoint');\r",
+                  "pm.expect(res.data).to.have.property('bucket');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/storage/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "storage",
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Storage Test Upload",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201', function () {\r",
+                  "  pm.response.to.have.status(201);\r",
+                  "});\r",
+                  "const res = pm.response.json();\r",
+                  "pm.expect(res.status).to.eql('success');\r",
+                  "pm.expect(res.message).to.eql('File uploaded to object storage successfully');\r",
+                  "pm.expect(res.data).to.have.property('bucket');\r",
+                  "pm.expect(res.data).to.have.property('key');\r",
+                  "pm.expect(res.data).to.have.property('url');\r",
+                  "pm.expect(res.data.bucket).to.eql('media');\r",
+                  "pm.environment.set('storageObjectKey', res.data.key);\r",
+                  "pm.environment.set('storageObjectUrl', res.data.url);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{  \r\n    \"filename\": \"postman-test-upload2.txt\",  \r\n    \"base64Data\": \"SGVsbG8gZnJvbSBQb3N0bWFuIGFuZCBNaW5JTyBTMyBTREs=\",  \r\n    \"contentType\": \"text/plain\",  \r\n    \"bucket\": \"media\",  \r\n    \"keyPrefix\": \"postman-tests\"\r\n    }",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/storage/test-upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "storage",
+                "test-upload"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Video Upload Multipart (Duration > 5 Minutes)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400', function () {\r",
+                  "  pm.response.to.have.status(400);\r",
+                  "});\r",
+                  "const res = pm.response.json();\r",
+                  "pm.expect(res.status).to.eql('error');\r",
+                  "pm.expect(res.message).to.include('Video duration exceeds 300 seconds');"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "video",
+                  "type": "file",
+                  "uuid": "3bfcbb9e-5570-4c95-9d11-9aa2fb3a05c2",
+                  "value": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/videos/upload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "videos",
+                "upload"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Following Feed",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {\r",
+              "    pm.response.to.have.status(200);\r",
+              "});\r",
+              "const res = pm.response.json();\r",
+              "pm.expect(res.status).to.eql('success');\r",
+              "pm.expect(res.feedType).to.eql('following');\r",
+              "pm.expect(res).to.have.property('results');\r",
+              "pm.expect(res).to.have.property('total');\r",
+              "pm.expect(res.data).to.have.property('videos');\r",
+              "pm.expect(res.data.videos).to.be.an('array');\r",
+              "if (res.data.videos.length > 0) {\r",
+              "    pm.expect(res.data.videos[0]).to.have.property('averageRating');\r",
+              "    pm.expect(res.data.videos[0]).to.have.property('recentEngagement');\r",
+              "    pm.expect(res.data.videos[0]).to.have.property('owner');\r",
+              "}"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/videos/feed/following?limit=20&skip=0",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "videos",
+            "feed",
+            "following"
+          ],
+          "query": [
+            {
+              "key": "limit",
+              "value": "20"
+            },
+            {
+              "key": "skip",
+              "value": "0"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Trending Feed",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {\r",
+              "  pm.response.to.have.status(200);\r",
+              "});\r",
+              "const res = pm.response.json();\r",
+              "pm.expect(res.status).to.eql('success');\r",
+              "pm.expect(res.feedType).to.eql('trending');\r",
+              "pm.expect(res).to.have.property('results');\r",
+              "pm.expect(res).to.have.property('total');\r",
+              "pm.expect(res.data).to.have.property('videos');\r",
+              "pm.expect(res.data.videos).to.be.an('array');\r",
+              "if (res.data.videos.length > 0) {\r",
+              "  pm.expect(res.data.videos[0]).to.have.property('averageRating');\r",
+              "  pm.expect(res.data.videos[0]).to.have.property('recentEngagement');\r",
+              "  pm.expect(res.data.videos[0]).to.have.property('owner');\r",
+              "}"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/videos/feed/trending?limit=20&skip=0",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "videos",
+            "feed",
+            "trending"
+          ],
+          "query": [
+            {
+              "key": "limit",
+              "value": "20"
+            },
+            {
+              "key": "skip",
+              "value": "0"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Stripe Checkout (test mode)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 201', function () {\r",
+              "  pm.response.to.have.status(201);\r",
+              "});\r",
+              "\r",
+              "pm.test('returns session info', function () {\r",
+              "  const json = pm.response.json();\r",
+              "  pm.expect(json.data).to.have.property('sessionId');\r",
+              "  pm.expect(json.data).to.have.property('url');\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token2}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"amount\": 7,\r\n    \"currency\": \"usd\",\r\n    \"successUrl\": \"http://localhost:3000/tip/success\",\r\n    \"cancelUrl\": \"http://localhost:3000/tip/cancel\",\r\n    \"videoId\": \"{{videoId}}\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/payments/create-session",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "payments",
+            "create-session"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Stripe webhook (local)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 400', function () {\r",
+              "  pm.response.to.have.status(400);\r",
+              "});\r",
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token2}}",
+            "type": "text",
+            "disabled": true
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/v1/payments/webhook",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "v1",
+            "payments",
+            "webhook"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Creator balance",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status 200', function () {\r",
+              "  pm.response.to.have.status(200);\r",
+              "});\r",
+              "\r",
+              "pm.test('returns balance fields', function () {\r",
+              "  const json = pm.response.json();\r",
+              "  pm.expect(json.data).to.have.property('availableBalance');\r",
+              "  pm.expect(json.data).to.have.property('pendingBalance');\r",
+              "  pm.expect(json.data).to.have.property('totalBalance');\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:5000/api/v1/payments/balance",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "5000",
+          "path": [
+            "api",
+            "v1",
+            "payments",
+            "balance"
+          ]
+        }
+      },
+      "response": []
     }
   ]
 }

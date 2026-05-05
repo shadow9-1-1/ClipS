@@ -1,188 +1,12 @@
 {
   "openapi": "3.0.0",
   "info": {
-    "title": "ClipS API test",
+    "title": "ClipS Phase 2 API test",
     "description": "",
     "version": "1.0.0"
   },
   "servers": [],
   "paths": {
-    "/api/v1/users/{{userId2}}/follow": {
-      "post": {
-        "tags": [
-          "Follow User"
-        ],
-        "summary": "Follow User",
-        "description": "",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          }
-        }
-      }
-    },
-    "/api/v1/users/{{userId2}}/followers": {
-      "get": {
-        "tags": [
-          "Followers List"
-        ],
-        "summary": "Followers List",
-        "description": "",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          }
-        }
-      }
-    },
-    "/api/v1/users/{{userId2}}/following": {
-      "get": {
-        "tags": [
-          "Following List"
-        ],
-        "summary": "Following List",
-        "description": "",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          }
-        }
-      }
-    },
-    "/api/v1/users/{{userId2}}/unfollow": {
-      "delete": {
-        "tags": [
-          "Unfollow User"
-        ],
-        "summary": "Unfollow User",
-        "description": "",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          }
-        }
-      }
-    },
-    "/api/v1/auth/register": {
-      "post": {
-        "tags": [
-          "New Register 2"
-        ],
-        "summary": "New Register 2",
-        "description": "",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          }
-        },
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "example": {
-                  "username": "{{username2}}",
-                  "email": "{{email2}}",
-                  "password": "{{password}}"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/admin/overview": {
-      "get": {
-        "tags": [
-          "Normal User for Admin"
-        ],
-        "summary": "Normal User for Admin",
-        "description": "",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/health": {
-      "get": {
-        "tags": [
-          "Admin Health"
-        ],
-        "summary": "Admin Health",
-        "description": "",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/stats": {
-      "get": {
-        "tags": [
-          "Admin Stats"
-        ],
-        "summary": "Admin Stats",
-        "description": "",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/moderation": {
-      "get": {
-        "tags": [
-          "Moderation Queue"
-        ],
-        "summary": "Moderation Queue",
-        "description": "",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          }
-        }
-      }
-    },
-    "/api/v1/admin/users/{{userId2}}/status": {
-      "patch": {
-        "tags": [
-          "Update User Account Status"
-        ],
-        "summary": "Update User Account Status",
-        "description": "",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": "Successful response"
-          }
-        },
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "example": {
-                  "active": false
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/health": {
       "get": {
         "tags": [
@@ -198,12 +22,37 @@
         }
       }
     },
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": [
+          "Admin Account Register"
+        ],
+        "summary": "Admin Account Register",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "text/plain": {
+              "schema": {
+                "type": "string",
+                "example": "{\r\n  \"username\": \"{{AdminUsername}}\",\r\n  \"email\": \"{{AdminEmail}}\",\r\n  \"password\": \"{{AdminPassword}}\"\r\n//   \"role\": \"admin\"\r\n}"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "tags": [
-          "Admin Login"
+          "2) Login Recipient User (notification owner)"
         ],
-        "summary": "Admin Login",
+        "summary": "2) Login Recipient User (notification owner)",
         "description": "",
         "parameters": [],
         "responses": {
@@ -217,8 +66,8 @@
               "schema": {
                 "type": "object",
                 "example": {
-                  "email": "{{AdminEmail}}",
-                  "password": "{{AdminPassword}}"
+                  "email": "{{email2}}",
+                  "password": "{{password}}"
                 }
               }
             }
@@ -282,9 +131,9 @@
     "/api/v1/users/preferences": {
       "patch": {
         "tags": [
-          "Update Notification Preferences"
+          "8) Disable Recipient Likes And NewVideos Emails"
         ],
-        "summary": "Update Notification Preferences",
+        "summary": "8) Disable Recipient Likes And NewVideos Emails",
         "description": "",
         "parameters": [],
         "responses": {
@@ -298,13 +147,9 @@
               "schema": {
                 "type": "object",
                 "example": {
-                  "inApp": {
-                    "followers": true,
-                    "comments": false
-                  },
                   "email": {
-                    "likes": true,
-                    "tips": false
+                    "likes": false,
+                    "newVideos": false
                   }
                 }
               }
@@ -328,12 +173,27 @@
         }
       }
     },
+    "/api/v1/admin/overview": {
+      "get": {
+        "tags": [
+          "Admin Overview"
+        ],
+        "summary": "Admin Overview",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
     "/api/v1/videos": {
       "post": {
         "tags": [
-          "Create Video"
+          "11) Recipient Creates Another Public Video With newVideos Disabled"
         ],
-        "summary": "Create Video",
+        "summary": "11) Recipient Creates Another Public Video With newVideos Disabled",
         "description": "",
         "parameters": [],
         "responses": {
@@ -347,10 +207,9 @@
               "schema": {
                 "type": "object",
                 "example": {
-                  "title": "Postman Test Video",
-                  "description": "Created from Postman test",
-                  "videoURL": "https://example.com/video.mp4",
-                  "duration": 120,
+                  "title": "Notification Disabled New Video {{$timestamp}}",
+                  "description": "New videos email disabled check",
+                  "duration": 30,
                   "status": "public"
                 }
               }
@@ -456,6 +315,427 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/v1/videos/{{videoId}}/likes": {
+      "post": {
+        "tags": [
+          "Like Video"
+        ],
+        "summary": "Like Video",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Unlike Video"
+        ],
+        "summary": "Unlike Video",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v1/users/{{userId2}}/follow": {
+      "post": {
+        "tags": [
+          "Follow User"
+        ],
+        "summary": "Follow User",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v1/users/{{userId2}}/followers": {
+      "get": {
+        "tags": [
+          "Followers List"
+        ],
+        "summary": "Followers List",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v1/users/{{userId2}}/following": {
+      "get": {
+        "tags": [
+          "Following List"
+        ],
+        "summary": "Following List",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v1/users/{{userId2}}/unfollow": {
+      "delete": {
+        "tags": [
+          "Unfollow User"
+        ],
+        "summary": "Unfollow User",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/health": {
+      "get": {
+        "tags": [
+          "Admin Health"
+        ],
+        "summary": "Admin Health",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/stats": {
+      "get": {
+        "tags": [
+          "Admin Stats"
+        ],
+        "summary": "Admin Stats",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/moderation": {
+      "get": {
+        "tags": [
+          "Moderation Queue"
+        ],
+        "summary": "Moderation Queue",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v1/admin/users/{{userId2}}/status": {
+      "patch": {
+        "tags": [
+          "Update User Account Status"
+        ],
+        "summary": "Update User Account Status",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "example": {
+                  "active": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/{{notificationRecipientId}}/follow": {
+      "post": {
+        "tags": [
+          "4) Actor Follows Recipient (Follower Trigger)"
+        ],
+        "summary": "4) Actor Follows Recipient (Follower Trigger)",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v1/videos/{{notificationVideoId}}/reviews": {
+      "post": {
+        "tags": [
+          "6) Actor Comments On Recipient Video (Comment Trigger)"
+        ],
+        "summary": "6) Actor Comments On Recipient Video (Comment Trigger)",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "example": {
+                  "rating": 5,
+                  "comment": "notification integration test comment {{$timestamp}}"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/videos/{{notificationVideoId}}/likes": {
+      "post": {
+        "tags": [
+          "10) Re-Like After Preference Disabled (Action Still Succeeds)"
+        ],
+        "summary": "10) Re-Like After Preference Disabled (Action Still Succeeds)",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "9) Actor Unlikes Recipient Video (Cleanup)"
+        ],
+        "summary": "9) Actor Unlikes Recipient Video (Cleanup)",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v1/storage/health": {
+      "get": {
+        "tags": [
+          "Storage Health"
+        ],
+        "summary": "Storage Health",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v1/storage/test-upload": {
+      "post": {
+        "tags": [
+          "Storage Test Upload"
+        ],
+        "summary": "Storage Test Upload",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "example": {
+                  "filename": "postman-test-upload2.txt",
+                  "base64Data": "SGVsbG8gZnJvbSBQb3N0bWFuIGFuZCBNaW5JTyBTMyBTREs=",
+                  "contentType": "text/plain",
+                  "bucket": "media",
+                  "keyPrefix": "postman-tests"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/videos/upload": {
+      "get": {
+        "tags": [
+          "Video Upload Multipart (Duration > 5 Minutes)"
+        ],
+        "summary": "Video Upload Multipart (Duration > 5 Minutes)",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v1/videos/feed/following": {
+      "get": {
+        "tags": [
+          "Following Feed"
+        ],
+        "summary": "Following Feed",
+        "description": "",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v1/videos/feed/trending": {
+      "get": {
+        "tags": [
+          "Trending Feed"
+        ],
+        "summary": "Trending Feed",
+        "description": "",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "description": "",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/create-session": {
+      "post": {
+        "tags": [
+          "Stripe Checkout (test mode)"
+        ],
+        "summary": "Stripe Checkout (test mode)",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "example": {
+                  "amount": 7,
+                  "currency": "usd",
+                  "successUrl": "http://localhost:3000/tip/success",
+                  "cancelUrl": "http://localhost:3000/tip/cancel",
+                  "videoId": "{{videoId}}"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/payments/webhook": {
+      "post": {
+        "tags": [
+          "Stripe webhook (local)"
+        ],
+        "summary": "Stripe webhook (local)",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
+          }
+        }
+      }
+    },
+    "/api/v1/payments/balance": {
+      "get": {
+        "tags": [
+          "Creator balance"
+        ],
+        "summary": "Creator balance",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response"
           }
         }
       }
