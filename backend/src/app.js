@@ -3,6 +3,7 @@ const cors = require('cors');
 const mongoSanitize = require('express-mongo-sanitize');
 const morgan = require('morgan');
 const swaggerUi = require('swagger-ui-express');
+const helmet = require('helmet');
 
 const routes = require('./routes');
 const healthRoutes = require('./routes/healthRoutes');
@@ -12,6 +13,8 @@ const { apiLimiter } = require('./middleware/rateLimiters');
 const { swaggerSpec } = require('./config/swagger');
 
 const app = express();
+
+app.use(helmet());
 
 // ============================================
 // CORS (Next.js on :3000 → API on :5000)
