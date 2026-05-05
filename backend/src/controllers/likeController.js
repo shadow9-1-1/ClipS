@@ -4,6 +4,7 @@ const like = async (req, res) => {
   const likeEntry = await likeVideo({
     videoId: req.params.id,
     userId: req.user._id,
+    likerUsername: req.user.username,
   });
 
   res.status(201).json({

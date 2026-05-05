@@ -1,8 +1,9 @@
 const Video = require('../models/Video');
 const VideoLike = require('../models/VideoLike');
 const { sendNewLikeNotification } = require('./notificationService');
+const { getSocketServer } = require('../sockets');
 
-const likeVideo = async ({ videoId, userId }) => {
+const likeVideo = async ({ videoId, userId, likerUsername }) => {
   const video = await Video.findById(videoId).select('_id owner title');
 
   if (!video) {
@@ -22,6 +23,16 @@ const likeVideo = async ({ videoId, userId }) => {
       likerId: userId,
       videoTitle: video.title,
     });
+
+    const io = getSocketServer();
+    const ownerId = video.owner?.toString();
+    const likerId = userId?.toString();
+    if (io && ownerId && ownerId !== likerId && likerUsername) {
+      io.to(ownerId).emit('new-like', {
+        likerUsername,
+        videoTitle: video.title,
+      });
+    }
 
     return {
       id: like._id.toString(),

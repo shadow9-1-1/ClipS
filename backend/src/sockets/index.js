@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken');
 
 const User = require('../models/User');
 
+let ioInstance = null;
+
 const defaultDevOrigins = ['http://localhost:3000', 'http://127.0.0.1:3000'];
 
 const getAllowedOrigins = () => {
@@ -91,6 +93,8 @@ const createSocketServer = (httpServer) => {
     cors: buildCorsOptions(),
   });
 
+  ioInstance = io;
+
   io.use((socket, next) => {
     authenticateSocket(socket)
       .then(() => next())
@@ -139,6 +143,9 @@ const createSocketServer = (httpServer) => {
   return io;
 };
 
+const getSocketServer = () => ioInstance;
+
 module.exports = {
   createSocketServer,
+  getSocketServer,
 };
