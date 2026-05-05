@@ -84,7 +84,7 @@ if (process.env.NODE_ENV === 'development') {
     app.use(morgan(':method :url :status'));
 }
 
-app.use(apiLimiter);
+app.use('/api/v1', apiLimiter);
 
 app.use('/health', healthRoutes);
 app.use('/api/v1', routes);
