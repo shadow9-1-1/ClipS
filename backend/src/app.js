@@ -6,6 +6,7 @@ const swaggerUi = require('swagger-ui-express');
 
 const routes = require('./routes');
 const healthRoutes = require('./routes/healthRoutes');
+const { handleWebhook } = require('./controllers/paymentController');
 const errorHandler = require('./middleware/errorHandler');
 const { swaggerSpec } = require('./config/swagger');
 
@@ -46,6 +47,7 @@ app.use(
 // ============================================
 // Body Parser Middleware
 // ============================================
+app.post('/api/v1/payments/webhook', express.raw({ type: 'application/json' }), handleWebhook);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
