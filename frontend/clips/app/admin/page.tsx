@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { StatCard } from "@/components/admin/StatCard";
+import Metric from "@/components/admin/Metric";
+import HealthBadge from "@/components/admin/HealthBadge";
 import { Spinner } from "@/components/ui/Spinner";
 import { getApiPrefix } from "@/lib/api";
 import { getBearerAuthHeader } from "@/lib/auth-headers";
@@ -54,6 +56,8 @@ const demoHealth: AdminHealth = {
 export default function AdminDashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+  const [reloadCounter, setReloadCounter] = useState(0);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [health, setHealth] = useState<AdminHealth | null>(null);
@@ -116,11 +120,13 @@ export default function AdminDashboardPage() {
         if (!cancelled) {
           setStats(statsJson.data ?? demoStats);
           setHealth(healthJson.data ?? demoHealth);
+          setLastUpdated(new Date());
         }
       } catch (error) {
         if (!cancelled) {
           setStats(demoStats);
           setHealth(demoHealth);
+          setLastUpdated(new Date());
           setFetchError(
             error instanceof Error
               ? `Demo data shown: ${error.message}`
@@ -136,7 +142,7 @@ export default function AdminDashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user]);
+  }, [authLoading, user, reloadCounter]);
 
   if (authLoading) {
     return (
@@ -157,13 +163,37 @@ export default function AdminDashboardPage() {
 
   return (
     <main className="flex flex-col gap-8 py-2">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Admin Dashboard
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-          Platform statistics and system health
-        </p>
+      <div className="flex items-start justify-between gap-6">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+            Admin Dashboard
+          </h1>
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            Platform statistics and system health
+          </p>
+          {lastUpdated ? (
+            <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+              Last updated {lastUpdated.toLocaleString()}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="flex shrink-0 items-center gap-2">
+          <a href="/admin/users" className="inline-flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-200">
+            Manage users
+          </a>
+          <button
+            type="button"
+            onClick={() => setReloadCounter((n) => n + 1)}
+            className="inline-flex items-center gap-2 rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/70 dark:text-zinc-200"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 4v6h6M20 20v-6h-6" />
+              <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M20 7a9 9 0 10-2.6 6.3L20 20" />
+            </svg>
+            Refresh
+          </button>
+        </div>
       </div>
 
       {dataLoading ? (
@@ -185,23 +215,42 @@ export default function AdminDashboardPage() {
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <StatCard title="Total users">
-          <p className="text-3xl font-semibold tabular-nums">
-            {stats?.totalUsers ?? "—"}
-          </p>
+        <StatCard
+          title="Total users"
+          icon={
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M16 11c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM8 11c1.657 0 3-1.343 3-3S9.657 5 8 5 5 6.343 5 8s1.343 3 3 3z" />
+              <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M2 20c0-3.866 3.582-7 8-7s8 3.134 8 7" />
+            </svg>
+          }
+        >
+          <Metric value={stats?.totalUsers ?? "—"} subtitle="Registered users on the platform" />
         </StatCard>
-        <StatCard title="Total videos">
-          <p className="text-3xl font-semibold tabular-nums">
-            {stats?.totalVideos ?? "—"}
-          </p>
+
+        <StatCard
+          title="Total videos"
+          icon={
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14v-4z" />
+              <rect x="3" y="6" width="12" height="12" rx="2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          }
+        >
+          <Metric value={stats?.totalVideos ?? "—"} subtitle="Total uploaded videos" />
         </StatCard>
-        <StatCard title="System health">
+
+        <StatCard
+          title="System health"
+          icon={
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M3 12h3l3 8 4-16 3 8h4" />
+            </svg>
+          }
+        >
           <ul className="space-y-3 text-sm">
             <li className="flex items-center justify-between gap-4">
               <span className="text-zinc-500 dark:text-zinc-400">Server status</span>
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${fetchError ? "bg-red-500/15 text-red-300" : health ? "bg-emerald-500/15 text-emerald-300" : "bg-zinc-500/15 text-zinc-300"}`}>
-                {fetchError ? "Offline" : health ? "Online" : dataLoading ? "Checking" : "Unknown"}
-              </span>
+              <HealthBadge status={fetchError ? "offline" : health ? "online" : "unknown"} />
             </li>
             <li className="flex items-center justify-between gap-4">
               <span className="text-zinc-500 dark:text-zinc-400">Database</span>
@@ -217,9 +266,7 @@ export default function AdminDashboardPage() {
             </li>
           </ul>
           {health?.memoryUsage ? (
-            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
-              Memory RSS {formatBytes(health.memoryUsage.rss)}
-            </p>
+            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">Memory RSS {formatBytes(health.memoryUsage.rss)}</p>
           ) : null}
         </StatCard>
       </div>

@@ -3,6 +3,9 @@ const {
     getAdminStats,
     updateUserStatus,
     getModerationQueue,
+    listUsers,
+    getUserWithVideos,
+    deleteUser,
 } = require('../services/adminService');
 
 const getAdminOverview = async(req, res) => {
@@ -73,4 +76,33 @@ module.exports = {
     getStats,
     updateUserAccountStatus,
     getModerationItems,
+};
+
+/**
+ * List users (admin)
+ */
+const getUsersList = async(req, res) => {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 50;
+
+    const result = await listUsers(page, limit);
+    res.status(200).json({ status: 'success', data: result });
+};
+
+/**
+ * Get user details with videos
+ */
+const getUserDetails = async(req, res) => {
+    const { id } = req.params;
+    const result = await getUserWithVideos(id);
+    res.status(200).json({ status: 'success', data: result });
+};
+
+/**
+ * Delete user (admin)
+ */
+const removeUser = async(req, res) => {
+    const { id } = req.params;
+    const result = await deleteUser(id);
+    res.status(200).json({ status: 'success', data: result });
 };

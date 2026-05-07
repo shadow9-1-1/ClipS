@@ -49,6 +49,33 @@ router.patch(
     asyncHandler(updateUserAccountStatus)
 );
 
+// List users
+router.get(
+    '/users',
+    asyncHandler(protect),
+    restrictTo('admin'),
+    validateRequest(emptySchema),
+    asyncHandler((req, res, next) => require('../controllers/adminController').getUsersList(req, res, next))
+);
+
+// Get user details
+router.get(
+    '/users/:id',
+    asyncHandler(protect),
+    restrictTo('admin'),
+    validateRequest(emptySchema),
+    asyncHandler((req, res, next) => require('../controllers/adminController').getUserDetails(req, res, next))
+);
+
+// Delete user
+router.delete(
+    '/users/:id',
+    asyncHandler(protect),
+    restrictTo('admin'),
+    validateRequest(emptySchema),
+    asyncHandler((req, res, next) => require('../controllers/adminController').removeUser(req, res, next))
+);
+
 // Moderation queue endpoint
 router.get(
     '/moderation',
