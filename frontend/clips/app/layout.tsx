@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
+import type { Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Navbar } from "@/components/layout/Navbar";
+import { Toaster } from "sonner";
 import { AuthProvider } from "@/context/AuthContext";
-import { UIProvider } from "@/context/UIContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -16,8 +16,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ClipSphere",
-  description: "ClipSphere — video sharing (Phase 2)",
+  title: "ClipS",
+  description: "ClipS is a short-video social platform with mock data.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#09111f",
 };
 
 export default function RootLayout({
@@ -30,19 +36,11 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col overflow-x-hidden">
-        <UIProvider>
-          <AuthProvider>
-            <div className="flex min-h-screen flex-col">
-              <Navbar />
-              <div className="flex flex-1 flex-col bg-zinc-50 dark:bg-zinc-950">
-                <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 py-6 sm:px-6 sm:py-8">
-                  {children}
-                </div>
-              </div>
-            </div>
-          </AuthProvider>
-        </UIProvider>
+      <body className="min-h-full overflow-x-hidden bg-background text-foreground">
+        <AuthProvider>
+          {children}
+          <Toaster position="top-right" richColors closeButton theme="dark" />
+        </AuthProvider>
       </body>
     </html>
   );

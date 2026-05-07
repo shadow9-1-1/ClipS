@@ -11,6 +11,7 @@ import {
 } from "react";
 import { getApiPrefix } from "@/lib/api";
 import { getBearerAuthHeader } from "@/lib/auth-headers";
+import { AuthService } from "@/lib/auth-service";
 
 export type User = {
   id: string;
@@ -55,7 +56,7 @@ async function fetchMeOnce(apiPrefix: string): Promise<FetchMeResult> {
       credentials: "include",
       headers: {
         Accept: "application/json",
-        ...getBearerAuthHeader(),
+        ...AuthService.getAuthHeader(),
       },
       cache: "no-store",
     });
@@ -158,6 +159,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [loadUser]);
 
   const logout = useCallback(() => {
+    AuthService.clearToken();
     setUser(null);
     setError(null);
   }, []);

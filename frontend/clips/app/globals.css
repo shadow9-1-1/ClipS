@@ -1,28 +1,116 @@
-/* Tailwind CSS v4: this single import loads base, components, and utilities
-   (equivalent to legacy @tailwind base; @tailwind components; @tailwind utilities;) */
 @import "tailwindcss";
-
 :root {
-  --background: #fafafa;
-  --foreground: #171717;
+    color-scheme: dark;
+    --background: 225 36% 7%;
+    --foreground: 210 40% 98%;
+    --card: 226 34% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 226 34% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 191 100% 60%;
+    --primary-foreground: 226 47% 10%;
+    --secondary: 234 23% 18%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 225 23% 16%;
+    --muted-foreground: 215 20% 66%;
+    --accent: 271 95% 68%;
+    --accent-foreground: 226 47% 10%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 225 18% 24%;
+    --input: 225 18% 20%;
+    --ring: 191 100% 60%;
+    --radius: 1.25rem;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+    border-color: hsl(var(--border));
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+    min-height: 100vh;
+    background: radial-gradient(circle at top left, hsl(var(--primary) / 0.12), transparent 30%), radial-gradient(circle at 90% 20%, hsl(var(--accent) / 0.14), transparent 24%), linear-gradient(180deg, hsl(226 38% 8%), hsl(var(--background)) 55%);
+    color: hsl(var(--foreground));
+    font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+::selection {
+    background: hsl(var(--primary) / 0.25);
+    color: hsl(var(--foreground));
+}
+
+.glass {
+    background: hsl(var(--card) / 0.72);
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+    border: 1px solid hsl(var(--border) / 0.6);
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.scroll-snap-y {
+    scroll-snap-type: y mandatory;
+}
+
+.snap-item {
+    scroll-snap-align: start;
+}
+
+.shadow-soft {
+    box-shadow: 0 24px 80px -32px hsl(0 0% 0% / 0.6);
+}
+
+a,
+button,
+input,
+textarea,
+select {
+    outline-color: hsl(var(--ring));
+}
+
+html {
+    background: hsl(var(--background));
+}
+
+body,
+html {
+    scroll-behavior: smooth;
+}
+
+.glass strong,
+.glass b {
+    color: hsl(var(--foreground));
+}
+
+.video-progress {
+    appearance: none;
+    border: none;
+    background: transparent;
+}
+
+.video-progress::-webkit-progress-bar {
+    background: hsl(var(--foreground) / 0.1);
+}
+
+.video-progress::-webkit-progress-value {
+    border-radius: 999px;
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)));
+}
+
+.video-progress::-moz-progress-bar {
+    border-radius: 999px;
+    background: linear-gradient(90deg, hsl(var(--primary)), hsl(var(--accent)), hsl(var(--primary)));
 }

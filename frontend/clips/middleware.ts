@@ -39,53 +39,34 @@ function isExpired(payload: SessionPayload): boolean {
 }
 
 export async function middleware(request: NextRequest) {
-  const secret = process.env.JWT_SECRET;
+  const pathname = request.nextUrl.pathname;
 
+  // Get auth token
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 
+  // If accessing auth pages with token, allow access
+  if (pathname.startsWith("/auth/")) {
+    return NextResponse.next();
+  }
+
+  // If no token and not on auth page, redirect to login
   if (!token) {
-    return loginRedirect(request);
+    return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
-  try {
-    const payload = secret
-      ? await verifySessionToken(token, secret)
-      : decodePayloadWithoutVerify(token);
-
-    if (!payload || isExpired(payload)) {
-      return loginRedirect(request);
-    }
-
-    if (request.nextUrl.pathname.startsWith("/admin") && !isAdminRole(payload)) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
-
-    return NextResponse.next();
-  } catch {
-    // If verification fails due to secret mismatch, fall back to decoded claims
-    // so valid logged-in users are not forced back to /login.
-    const payload = decodePayloadWithoutVerify(token);
-    if (!payload || isExpired(payload)) {
-      const res = loginRedirect(request);
-      res.cookies.delete(AUTH_COOKIE_NAME);
-      return res;
-    }
-
-    if (request.nextUrl.pathname.startsWith("/admin") && !isAdminRole(payload)) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
-
-    return NextResponse.next();
-  }
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    "/upload",
-    "/upload/:path*",
-    "/settings",
-    "/settings/:path*",
-    "/admin",
-    "/admin/:path*",
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico|public).*)",
   ],
 };
