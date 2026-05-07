@@ -57,10 +57,13 @@ export function VideoMenu({ video, onOpenShare, onOpenReport }: VideoMenuProps) 
           Download
         </DropdownMenuItem>
         <DropdownMenuItem
-          className="text-slate-100 data-[highlighted]:bg-white/20 data-[highlighted]:text-white"
+            className={cn(
+              "text-slate-100 data-[highlighted]:bg-white/20 data-[highlighted]:text-white",
+              saved && "bg-emerald-500/15 text-emerald-100 data-[highlighted]:bg-emerald-500/25 data-[highlighted]:text-emerald-50"
+            )}
           onClick={() => toggleSave(video.id)}
         >
-          <Heart className={cn("h-4 w-4", saved && "fill-primary text-primary")} />
+            <Heart className={cn("h-4 w-4", saved && "fill-emerald-400 text-emerald-400")} />
           {saved ? "Saved" : "Save"}
         </DropdownMenuItem>
         <DropdownMenuItem

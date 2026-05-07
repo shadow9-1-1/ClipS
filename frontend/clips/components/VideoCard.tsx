@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { BadgeCheck, Clock3, Music2, Hash } from "lucide-react";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import type { Video } from "@/data/mock";
 import { getUser } from "@/data/mock";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { useMobile } from "@/hooks/use-mobile";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { ActionBar } from "@/components/ActionBar";
 import { CommentsDrawer } from "@/components/CommentsDrawer";
@@ -23,6 +24,7 @@ type VideoCardProps = {
 
 export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) {
   const creator = getUser(video.userId);
+  const isMobile = useMobile();
   const liked = useAppStore((state) => Boolean(state.liked[video.id]));
   const following = useAppStore((state) => Boolean(state.following[video.userId]));
   const setLiked = useAppStore((state) => state.setLiked);
@@ -31,6 +33,7 @@ export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) 
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const stats = useMemo(() => {
     return [
@@ -38,6 +41,12 @@ export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) 
       { label: `${video.saves.toLocaleString()}`, value: "saves" },
     ];
   }, [video.rating, video.saves]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setDetailsOpen(false);
+    }
+  }, [isMobile, video.id]);
 
   if (notInterested) return null;
 
@@ -70,9 +79,29 @@ export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) 
             </div>
           </Link>
 
-          <div className="glass group/info max-w-2xl rounded-[2rem] p-5 text-sm leading-relaxed text-white/90 transition-all duration-300 ease-out md:max-w-[22rem] md:p-4 md:hover:max-w-2xl md:hover:p-5">
-            <p className="text-base font-medium text-white transition-all duration-300 md:line-clamp-2 md:group-hover/info:line-clamp-none">{video.caption}</p>
-            <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium text-white/70 transition-all duration-300 md:max-h-0 md:translate-y-1 md:overflow-hidden md:opacity-0 md:group-hover/info:max-h-24 md:group-hover/info:translate-y-0 md:group-hover/info:opacity-100">
+          <div
+            className={cn(
+              "glass group/info rounded-[2rem] text-sm leading-relaxed text-white/90 transition-all duration-300 ease-out",
+              isMobile
+                ? detailsOpen
+                  ? "max-w-2xl p-5"
+                  : "max-w-[18rem] p-4"
+                : "max-w-[22rem] p-4 md:hover:max-w-2xl md:hover:p-5"
+            )}
+          >
+            <p className={cn("text-base font-medium text-white transition-all duration-300", isMobile ? (detailsOpen ? "" : "line-clamp-2") : "md:line-clamp-2 md:group-hover/info:line-clamp-none")}>
+              {video.caption}
+            </p>
+            <div
+              className={cn(
+                "mt-3 flex flex-wrap gap-2 text-xs font-medium text-white/70 transition-all duration-300",
+                isMobile
+                  ? detailsOpen
+                    ? "opacity-100"
+                    : "max-h-0 translate-y-1 overflow-hidden opacity-0"
+                  : "md:max-h-0 md:translate-y-1 md:overflow-hidden md:opacity-0 md:group-hover/info:max-h-24 md:group-hover/info:translate-y-0 md:group-hover/info:opacity-100"
+              )}
+            >
               {video.tags.map((tag) => (
                 <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5">
                   <Hash className="h-3 w-3" />
@@ -80,7 +109,16 @@ export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) 
                 </span>
               ))}
             </div>
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-white/70 transition-all duration-300 md:max-h-0 md:translate-y-1 md:overflow-hidden md:opacity-0 md:group-hover/info:max-h-24 md:group-hover/info:translate-y-0 md:group-hover/info:opacity-100">
+            <div
+              className={cn(
+                "mt-4 flex flex-wrap items-center gap-4 text-xs text-white/70 transition-all duration-300",
+                isMobile
+                  ? detailsOpen
+                    ? "opacity-100"
+                    : "max-h-0 translate-y-1 overflow-hidden opacity-0"
+                  : "md:max-h-0 md:translate-y-1 md:overflow-hidden md:opacity-0 md:group-hover/info:max-h-24 md:group-hover/info:translate-y-0 md:group-hover/info:opacity-100"
+              )}
+            >
               <span className="inline-flex items-center gap-1">
                 <Music2 className="h-3.5 w-3.5 text-primary" />
                 {video.music}
@@ -95,6 +133,15 @@ export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) 
                 </span>
               ))}
             </div>
+            {isMobile ? (
+              <button
+                type="button"
+                onClick={() => setDetailsOpen((current) => !current)}
+                className="mt-3 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-white/80 transition hover:bg-white/10"
+              >
+                {detailsOpen ? "Hide details" : "Tap for details"}
+              </button>
+            ) : null}
           </div>
         </div>
 
