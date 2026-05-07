@@ -82,7 +82,7 @@ export function Navbar() {
           ))}
           {!loading && !user ? (
             <Link
-              href="/login"
+              href="/auth/login"
               className="ml-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-100 dark:hover:bg-zinc-800"
             >
               Sign in
@@ -93,7 +93,6 @@ export function Navbar() {
         <button
           type="button"
           className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 text-zinc-800 hover:bg-zinc-100 md:hidden dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
-          aria-expanded={open}
           aria-controls="mobile-nav"
           aria-label={open ? "Close menu" : "Open menu"}
           onClick={() => setOpen((o) => !o)}
@@ -149,7 +148,7 @@ export function Navbar() {
             ))}
             {!loading && !user ? (
               <Link
-                href="/login"
+                href="/auth/login"
                 className="mt-1 rounded-lg border border-zinc-300 px-3 py-2 text-center text-sm font-medium text-zinc-900 dark:border-zinc-600 dark:text-zinc-100"
                 onClick={() => setOpen(false)}
               >

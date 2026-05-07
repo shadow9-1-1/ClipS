@@ -34,6 +34,9 @@ export function ProfileScreen({ username }: ProfileScreenProps) {
   const profileVideos = useMemo(() => getVideosByUser(profile.id), [profile.id]);
   const likedVideos = useMemo(() => allVideos.filter((video) => likedMap[video.id]), [allVideos, likedMap]);
   const savedVideos = useMemo(() => allVideos.filter((video) => savedMap[video.id]), [allVideos, savedMap]);
+  const videosLabel = `Videos (${profileVideos.length})`;
+  const likedLabel = ownProfile ? `My likes (${likedVideos.length})` : `Liked (${likedVideos.length})`;
+  const savedLabel = ownProfile ? `My saved (${savedVideos.length})` : `Saved (${savedVideos.length})`;
 
   const followers = useMemo(() => users.filter((user) => user.id !== profile.id).slice(0, 4), [profile.id]);
   const following = useMemo(() => {
@@ -114,11 +117,12 @@ export function ProfileScreen({ username }: ProfileScreenProps) {
       <section className="glass rounded-[2.5rem] p-6">
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="grid w-full max-w-md grid-cols-3">
-            <TabsTrigger value="videos">Videos</TabsTrigger>
-            <TabsTrigger value="liked">Liked</TabsTrigger>
-            <TabsTrigger value="saved">Saved</TabsTrigger>
+            <TabsTrigger value="videos">{videosLabel}</TabsTrigger>
+            <TabsTrigger value="liked">{likedLabel}</TabsTrigger>
+            <TabsTrigger value="saved">{savedLabel}</TabsTrigger>
           </TabsList>
           <TabsContent value="videos">
+            <SectionLabel title="Your videos" description={ownProfile ? "Clips you posted to your profile." : `${profile.displayName}'s posted clips.`} />
             <Grid
               videos={profileVideos}
               onSelect={(index) => {
@@ -128,6 +132,7 @@ export function ProfileScreen({ username }: ProfileScreenProps) {
             />
           </TabsContent>
           <TabsContent value="liked">
+            <SectionLabel title={ownProfile ? "My likes" : "Liked videos"} description={ownProfile ? "Clips you have liked." : `${profile.displayName}'s liked clips.`} />
             <Grid
               videos={likedVideos}
               onSelect={(index) => {
@@ -137,6 +142,7 @@ export function ProfileScreen({ username }: ProfileScreenProps) {
             />
           </TabsContent>
           <TabsContent value="saved">
+            <SectionLabel title={ownProfile ? "My saved" : "Saved videos"} description={ownProfile ? "Clips you have saved for later." : `${profile.displayName}'s saved clips.`} />
             <Grid
               videos={savedVideos}
               onSelect={(index) => {
@@ -151,6 +157,15 @@ export function ProfileScreen({ username }: ProfileScreenProps) {
       <VideoFeedDialog open={dialogOpen} onOpenChange={setDialogOpen} videos={selectedList} startIndex={startIndex} />
       <FollowListDialog open={followDialogOpen} onOpenChange={setFollowDialogOpen} followers={followers} following={following} title={`${profile.displayName}'s network`} />
     </motion.div>
+  );
+}
+
+function SectionLabel({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="mt-6 flex flex-col gap-1">
+      <p className="text-xs uppercase tracking-[0.28em] text-muted-foreground">{title}</p>
+      <p className="text-sm text-muted-foreground">{description}</p>
+    </div>
   );
 }
 

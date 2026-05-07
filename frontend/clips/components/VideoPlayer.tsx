@@ -20,6 +20,7 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [burstCount, setBurstCount] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     const element = videoRef.current;
@@ -38,7 +39,18 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
     const element = videoRef.current;
     if (!element) return;
     element.muted = isMuted;
+    element.volume = isMuted ? 0 : 1;
   }, [isMuted]);
+
+  useEffect(() => {
+    const syncFullscreen = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+
+    syncFullscreen();
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    return () => document.removeEventListener("fullscreenchange", syncFullscreen);
+  }, []);
 
   const togglePlay = () => {
     const element = videoRef.current;
@@ -54,13 +66,41 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
   };
 
   const requestFullscreen = async () => {
-    const element = wrapperRef.current;
-    if (!element?.requestFullscreen) return;
-    if (document.fullscreenElement) {
-      await document.exitFullscreen();
+    const element = videoRef.current ?? wrapperRef.current;
+    if (!element) return;
+
+    const fullscreenElement = document.fullscreenElement;
+    if (fullscreenElement) {
+      if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      }
       return;
     }
-    await element.requestFullscreen();
+
+    const webkitElement = element as HTMLVideoElement & {
+      webkitEnterFullscreen?: () => void;
+      webkitEnterFullScreen?: () => void;
+      webkitRequestFullscreen?: () => Promise<void> | void;
+    };
+
+    if (typeof webkitElement.webkitEnterFullscreen === "function") {
+      webkitElement.webkitEnterFullscreen();
+      return;
+    }
+
+    if (typeof webkitElement.webkitEnterFullScreen === "function") {
+      webkitElement.webkitEnterFullScreen();
+      return;
+    }
+
+    if (typeof webkitElement.webkitRequestFullscreen === "function") {
+      await webkitElement.webkitRequestFullscreen();
+      return;
+    }
+
+    if ("requestFullscreen" in element) {
+      await element.requestFullscreen();
+    }
   };
 
   const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -68,6 +108,12 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
     const distance = Math.hypot(event.clientX - lastTapRef.current.x, event.clientY - lastTapRef.current.y);
     const isDoubleTap = now - lastTapRef.current.time < 280 && distance < 24;
     lastTapRef.current = { time: now, x: event.clientX, y: event.clientY };
+
+    const target = event.target as Element | null;
+    if (target && target.closest("button, a, [role='button']")) {
+      // Click landed on a control; treat as handled by that control.
+      return;
+    }
 
     if (isDoubleTap) {
       onDoubleTapLike();
@@ -115,25 +161,44 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onPointerDown={(event) => event.stopPropagation()}
-            onPointerUp={(event) => event.stopPropagation()}
-            onClick={(event) => {
-              event.stopPropagation();
-              setIsMuted((current) => !current);
+            onClick={async (event) => {
+              event.preventDefault();
+              const vid = videoRef.current;
+              if (!vid) return;
+              const newMuted = !vid.muted;
+              try {
+                vid.muted = newMuted;
+                vid.volume = newMuted ? 0 : 1;
+                if (!newMuted) {
+                  await vid.play();
+                }
+              } catch {
+                // ignore
+              }
+              setIsMuted(newMuted);
             }}
             className="glass pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full text-foreground transition hover:scale-105"
             aria-label={isMuted ? "Unmute video" : "Mute video"}
           >
-            {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            <span className={cn("transition-colors", isMuted ? "text-white/90" : "text-primary") }>
+              {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+            </span>
           </button>
           {video.orientation === "landscape" ? (
             <button
               type="button"
-              onPointerDown={(event) => event.stopPropagation()}
-              onPointerUp={(event) => event.stopPropagation()}
-              onClick={(event) => {
-                event.stopPropagation();
-                void requestFullscreen();
+              onClick={async (event) => {
+                event.preventDefault();
+                try {
+                  const vid = videoRef.current;
+                  if (vid && (vid as any).requestFullscreen) {
+                    await (vid as any).requestFullscreen();
+                    return;
+                  }
+                  await requestFullscreen();
+                } catch {
+                  // ignore
+                }
               }}
               className="glass pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full text-foreground transition hover:scale-105"
               aria-label="Fullscreen video"

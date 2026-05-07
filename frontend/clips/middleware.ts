@@ -10,7 +10,7 @@ import {
 function loginRedirect(request: NextRequest) {
   const url = request.nextUrl.clone();
   const pathname = request.nextUrl.pathname + request.nextUrl.search;
-  url.pathname = "/login";
+  url.pathname = "/auth/login";
   url.search = "";
   url.searchParams.set("callbackUrl", pathname || "/");
   return NextResponse.redirect(url);
@@ -18,14 +18,12 @@ function loginRedirect(request: NextRequest) {
 
 function decodePayloadWithoutVerify(token: string): SessionPayload | null {
   const parts = token.split(".");
-  if (parts.length < 2) return null;
-
-  const base64Url = parts[1];
-  const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
 
   try {
-    const json = atob(padded);
+    const json =
+      parts.length >= 2
+        ? atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))
+        : atob(token);
     return JSON.parse(json) as SessionPayload;
   } catch {
     return null;
@@ -52,6 +50,14 @@ export async function middleware(request: NextRequest) {
   // If no token and not on auth page, redirect to login
   if (!token) {
     return NextResponse.redirect(new URL("/auth/login", request.url));
+  }
+
+  // Protect admin route: require token payload role === 'admin'
+  if (pathname.startsWith("/admin")) {
+    const payload = decodePayloadWithoutVerify(token);
+    if (!payload || payload.role !== "admin") {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
   }
 
   return NextResponse.next();

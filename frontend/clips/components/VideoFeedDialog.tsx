@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { X } from "lucide-react";
+import { ArrowLeft, X } from "lucide-react";
 import type { Video } from "@/data/mock";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { DialogClose } from "@radix-ui/react-dialog";
@@ -51,6 +51,15 @@ export function VideoFeedDialog({ open, onOpenChange, videos, startIndex }: Vide
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="h-dvh w-dvw max-w-none rounded-none border-none bg-background p-0">
         <DialogTitle className="sr-only">Video feed viewer</DialogTitle>
+        <button
+          type="button"
+          onClick={() => onOpenChange(false)}
+          className="absolute left-4 top-4 z-20 inline-flex h-11 items-center gap-2 rounded-full border border-white/10 bg-black/40 px-4 text-sm font-medium text-white backdrop-blur-sm transition hover:bg-black/60"
+          aria-label="Back to explore"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to explore
+        </button>
         <DialogClose className="absolute right-4 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60">
           <X className="h-5 w-5" />
         </DialogClose>

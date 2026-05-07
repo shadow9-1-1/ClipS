@@ -7,14 +7,11 @@ import { StatCard } from "@/components/admin/StatCard";
 import { Spinner } from "@/components/ui/Spinner";
 import { getApiPrefix } from "@/lib/api";
 import { getBearerAuthHeader } from "@/lib/auth-headers";
+import { users, videos } from "@/data/mock";
 
 type AdminStats = {
   totalUsers?: number;
   totalVideos?: number;
-  mostActiveUsers?: Array<{
-    username?: string;
-    videoCount?: number;
-  }>;
 };
 
 type AdminHealth = {
@@ -43,6 +40,17 @@ function formatBytes(n: number | undefined): string {
   return `${mb.toFixed(1)} MB`;
 }
 
+const demoStats: AdminStats = {
+  totalUsers: users.length,
+  totalVideos: videos.length,
+};
+
+const demoHealth: AdminHealth = {
+  uptime: typeof performance !== "undefined" ? performance.now() / 1000 : 0,
+  dbStatus: "demo",
+  memoryUsage: undefined,
+};
+
 export default function AdminDashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
@@ -55,7 +63,7 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      router.replace("/login?callbackUrl=/admin");
+      router.replace("/auth/login?callbackUrl=/admin");
       return;
     }
     if (user.role !== "admin") {
@@ -95,23 +103,30 @@ export default function AdminDashboardPage() {
         ]);
 
         if (!statsRes.ok || !healthRes.ok) {
-          const msg =
+          throw new Error(
             !statsRes.ok
               ? `Stats failed (${statsRes.status})`
-              : `Health failed (${healthRes.status})`;
-          if (!cancelled) setFetchError(msg);
-          return;
+              : `Health failed (${healthRes.status})`
+          );
         }
 
         const statsJson = (await statsRes.json()) as { data?: AdminStats };
         const healthJson = (await healthRes.json()) as { data?: AdminHealth };
 
         if (!cancelled) {
-          setStats(statsJson.data ?? null);
-          setHealth(healthJson.data ?? null);
+          setStats(statsJson.data ?? demoStats);
+          setHealth(healthJson.data ?? demoHealth);
         }
-      } catch {
-        if (!cancelled) setFetchError("Network error while loading admin data.");
+      } catch (error) {
+        if (!cancelled) {
+          setStats(demoStats);
+          setHealth(demoHealth);
+          setFetchError(
+            error instanceof Error
+              ? `Demo data shown: ${error.message}`
+              : "Demo data shown because the backend could not be reached."
+          );
+        }
       } finally {
         if (!cancelled) setDataLoading(false);
       }
@@ -162,14 +177,14 @@ export default function AdminDashboardPage() {
 
       {fetchError ? (
         <div
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
-          role="alert"
+          className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+          role="status"
         >
           {fetchError}
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         <StatCard title="Total users">
           <p className="text-3xl font-semibold tabular-nums">
             {stats?.totalUsers ?? "—"}
@@ -180,67 +195,34 @@ export default function AdminDashboardPage() {
             {stats?.totalVideos ?? "—"}
           </p>
         </StatCard>
-        <StatCard title="Database">
-          <p className="text-lg font-medium capitalize">
-            {health?.dbStatus ?? "—"}
-          </p>
-        </StatCard>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <StatCard title="Server uptime">
-          <p className="text-2xl font-semibold tabular-nums">
-            {health?.uptime != null
-              ? formatUptime(health.uptime)
-              : "—"}
-          </p>
-          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-            Process uptime (server)
-          </p>
-        </StatCard>
-        <StatCard title="Memory usage">
-          <ul className="space-y-1 text-sm">
-            <li className="flex justify-between gap-4">
-              <span className="text-zinc-500 dark:text-zinc-400">RSS</span>
-              <span className="font-mono tabular-nums">
-                {formatBytes(health?.memoryUsage?.rss)}
+        <StatCard title="System health">
+          <ul className="space-y-3 text-sm">
+            <li className="flex items-center justify-between gap-4">
+              <span className="text-zinc-500 dark:text-zinc-400">Server status</span>
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${fetchError ? "bg-red-500/15 text-red-300" : health ? "bg-emerald-500/15 text-emerald-300" : "bg-zinc-500/15 text-zinc-300"}`}>
+                {fetchError ? "Offline" : health ? "Online" : dataLoading ? "Checking" : "Unknown"}
               </span>
             </li>
-            <li className="flex justify-between gap-4">
-              <span className="text-zinc-500 dark:text-zinc-400">Heap used</span>
-              <span className="font-mono tabular-nums">
-                {formatBytes(health?.memoryUsage?.heapUsed)}
+            <li className="flex items-center justify-between gap-4">
+              <span className="text-zinc-500 dark:text-zinc-400">Database</span>
+              <span className="rounded-full bg-sky-500/15 px-3 py-1 text-xs font-semibold text-sky-300 capitalize">
+                {health?.dbStatus ?? "—"}
               </span>
             </li>
-            <li className="flex justify-between gap-4">
-              <span className="text-zinc-500 dark:text-zinc-400">Heap total</span>
-              <span className="font-mono tabular-nums">
-                {formatBytes(health?.memoryUsage?.heapTotal)}
+            <li className="flex items-center justify-between gap-4">
+              <span className="text-zinc-500 dark:text-zinc-400">Uptime</span>
+              <span className="font-mono tabular-nums text-zinc-900 dark:text-zinc-50">
+                {health?.uptime != null ? formatUptime(health.uptime) : "—"}
               </span>
             </li>
           </ul>
+          {health?.memoryUsage ? (
+            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+              Memory RSS {formatBytes(health.memoryUsage.rss)}
+            </p>
+          ) : null}
         </StatCard>
       </div>
-
-      {stats?.mostActiveUsers && stats.mostActiveUsers.length > 0 ? (
-        <StatCard title="Most active creators (top 5)">
-          <ul className="mt-2 space-y-2 text-sm">
-            {stats.mostActiveUsers.map((u, i) => (
-              <li
-                key={i}
-                className="flex items-center justify-between border-b border-zinc-100 pb-2 last:border-0 dark:border-zinc-800"
-              >
-                <span className="font-medium">
-                  {u.username ?? "User"}
-                </span>
-                <span className="tabular-nums text-zinc-500 dark:text-zinc-400">
-                  {u.videoCount ?? 0} videos
-                </span>
-              </li>
-            ))}
-          </ul>
-        </StatCard>
-      ) : null}
     </main>
   );
 }
