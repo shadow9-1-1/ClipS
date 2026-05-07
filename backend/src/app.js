@@ -3,13 +3,18 @@ const cors = require('cors');
 const mongoSanitize = require('express-mongo-sanitize');
 const morgan = require('morgan');
 const swaggerUi = require('swagger-ui-express');
+const helmet = require('helmet');
 
 const routes = require('./routes');
 const healthRoutes = require('./routes/healthRoutes');
+const { handleWebhook } = require('./controllers/paymentController');
 const errorHandler = require('./middleware/errorHandler');
+const { apiLimiter } = require('./middleware/rateLimiters');
 const { swaggerSpec } = require('./config/swagger');
 
 const app = express();
+
+app.use(helmet());
 
 // ============================================
 // CORS (Next.js on :3000 → API on :5000)
@@ -46,6 +51,7 @@ app.use(
 // ============================================
 // Body Parser Middleware
 // ============================================
+app.post('/api/v1/payments/webhook', express.raw({ type: 'application/json' }), handleWebhook);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -77,6 +83,8 @@ app.use(
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan(':method :url :status'));
 }
+
+app.use('/api/v1', apiLimiter);
 
 app.use('/health', healthRoutes);
 app.use('/api/v1', routes);

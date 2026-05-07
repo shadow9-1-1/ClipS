@@ -24,6 +24,7 @@ const startServer = async () => {
     createSocketServer(server);
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+      console.log(`Swagger docs at http://localhost:${PORT}/api-docs`);
       console.log(`Health check at http://localhost:${PORT}/api/v1/health`);
       // console.log(`Auth register at http://localhost:${PORT}/api/v1/auth/register`);
       // console.log(`Auth login at http://localhost:${PORT}/api/v1/auth/login`);
