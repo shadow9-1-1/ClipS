@@ -64,11 +64,6 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
   };
 
   const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.pointerType === "mouse") {
-      setIsMuted((current) => !current);
-      return;
-    }
-
     const now = Date.now();
     const distance = Math.hypot(event.clientX - lastTapRef.current.x, event.clientY - lastTapRef.current.y);
     const isDoubleTap = now - lastTapRef.current.time < 280 && distance < 24;
@@ -120,6 +115,8 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onPointerDown={(event) => event.stopPropagation()}
+            onPointerUp={(event) => event.stopPropagation()}
             onClick={(event) => {
               event.stopPropagation();
               setIsMuted((current) => !current);
@@ -132,6 +129,8 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
           {video.orientation === "landscape" ? (
             <button
               type="button"
+              onPointerDown={(event) => event.stopPropagation()}
+              onPointerUp={(event) => event.stopPropagation()}
               onClick={(event) => {
                 event.stopPropagation();
                 void requestFullscreen();
@@ -148,13 +147,15 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
       <div className="absolute inset-0 flex items-center justify-center">
         <button
           type="button"
+          onPointerDown={(event) => event.stopPropagation()}
+          onPointerUp={(event) => event.stopPropagation()}
           onClick={(event) => {
             event.stopPropagation();
             togglePlay();
           }}
           className={cn(
             "pointer-events-auto flex h-20 w-20 items-center justify-center rounded-full border border-white/15 bg-black/25 text-white/90 shadow-soft backdrop-blur-sm transition",
-            isPlaying ? "opacity-0" : "opacity-100"
+            isPlaying ? "opacity-80" : "opacity-100"
           )}
           aria-label={isPlaying ? "Pause video" : "Play video"}
         >

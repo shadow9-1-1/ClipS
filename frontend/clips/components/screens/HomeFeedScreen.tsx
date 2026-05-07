@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppStore } from "@/lib/store";
 import { VideoCard } from "@/components/VideoCard";
 
@@ -11,10 +11,15 @@ export function HomeFeedScreen() {
   const following = useAppStore((state) => state.following);
   const notInterested = useAppStore((state) => state.notInterested);
   const setLoading = useAppStore((state) => state.setLoading);
+  const hasMoreVideos = useAppStore((state) => state.hasMoreVideos);
+  const loadMoreVideos = useAppStore((state) => state.loadMoreVideos);
   const [activeTab, setActiveTab] = useState<"for-you" | "following">("for-you");
   const [loading, setLocalLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const itemRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const loaderRef = useRef<HTMLDivElement | null>(null);
+  const fetchTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -52,6 +57,39 @@ export function HomeFeedScreen() {
     return () => observer.disconnect();
   }, [feedVideos]);
 
+  useEffect(() => {
+    const sentinel = loaderRef.current;
+    if (!sentinel || !hasMoreVideos) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        if (!first?.isIntersecting || isFetchingNextPage) return;
+
+        setIsFetchingNextPage(true);
+        fetchTimerRef.current = window.setTimeout(() => {
+          loadMoreVideos();
+          setIsFetchingNextPage(false);
+        }, 220);
+      },
+      {
+        root: null,
+        rootMargin: "600px 0px",
+        threshold: 0,
+      }
+    );
+
+    observer.observe(sentinel);
+
+    return () => {
+      observer.disconnect();
+      if (fetchTimerRef.current) {
+        window.clearTimeout(fetchTimerRef.current);
+        fetchTimerRef.current = null;
+      }
+    };
+  }, [hasMoreVideos, isFetchingNextPage, loadMoreVideos]);
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -87,17 +125,22 @@ export function HomeFeedScreen() {
             </div>
           </div>
         ) : (
-          feedVideos.map((video, index) => (
-            <div
-              key={video.id}
-              ref={(node) => {
-                itemRefs.current[index] = node;
-              }}
-              data-index={index}
-            >
-              <VideoCard video={video} active={index === activeIndex} />
+          <>
+            {feedVideos.map((video, index) => (
+              <div
+                key={video.id}
+                ref={(node) => {
+                  itemRefs.current[index] = node;
+                }}
+                data-index={index}
+              >
+                <VideoCard video={video} active={index === activeIndex} />
+              </div>
+            ))}
+            <div ref={loaderRef} className="py-3 text-center text-sm text-muted-foreground">
+              {hasMoreVideos ? "Loading more videos..." : "You're all caught up"}
             </div>
-          ))
+          </>
         )}
       </div>
     </motion.div>

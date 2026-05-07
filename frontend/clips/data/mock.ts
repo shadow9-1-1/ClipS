@@ -445,7 +445,8 @@ export function getUser(id: string) {
 }
 
 export function getUserByUsername(username: string) {
-  return users.find((user) => user.username === username) ?? users[0];
+  const normalized = decodeURIComponent(username).trim().replace(/^@/, "").toLowerCase();
+  return users.find((user) => user.username.toLowerCase() === normalized);
 }
 
 export function getVideosByUser(id: string) {

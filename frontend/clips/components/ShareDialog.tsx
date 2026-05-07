@@ -46,7 +46,7 @@ export function ShareDialog({ open, onOpenChange, video }: ShareDialogProps) {
         </DialogHeader>
 
         <div className="mt-4 flex flex-wrap gap-3">
-          <button type="button" onClick={copy} className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:scale-[1.01]">
+          <button type="button" onClick={copy} className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-white/10 px-5 text-sm font-semibold text-foreground transition hover:scale-[1.01] hover:bg-white/15">
             <Copy className="h-4 w-4" /> Copy link
           </button>
           <button type="button" onClick={nativeShare} className="inline-flex h-11 items-center gap-2 rounded-full border border-border bg-white/5 px-5 text-sm font-semibold text-foreground transition hover:bg-white/10">

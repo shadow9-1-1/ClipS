@@ -13,7 +13,7 @@ export const DrawerOverlay = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
-  <DialogPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-50 bg-black/70", className)} {...props} />
+  <DialogPrimitive.Overlay ref={ref} className={cn("fixed inset-0 z-50 bg-black/85 backdrop-blur-sm", className)} {...props} />
 ));
 DrawerOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
@@ -26,7 +26,7 @@ export const DrawerContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed inset-x-0 bottom-0 z-50 max-h-[88vh] rounded-t-[2rem] border-t border-border bg-card p-5 text-card-foreground shadow-soft outline-none",
+        "fixed inset-x-0 bottom-0 z-50 max-h-[88vh] rounded-t-[2rem] border-t border-white/15 bg-slate-950/96 p-5 text-slate-100 shadow-soft outline-none",
         className
       )}
       {...props}

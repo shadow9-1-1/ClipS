@@ -1,10 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { Download, EllipsisVertical, Heart, Share2, Sparkles, ThumbsDown, Flag } from "lucide-react";
 import type { Video } from "@/data/mock";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { StarRating } from "@/components/StarRating";
 
 type VideoMenuProps = {
@@ -14,6 +15,7 @@ type VideoMenuProps = {
 };
 
 export function VideoMenu({ video, onOpenShare, onOpenReport }: VideoMenuProps) {
+  const [showRating, setShowRating] = useState(false);
   const settings = useAppStore((state) => state.settings);
   const updateSettings = useAppStore((state) => state.updateSettings);
   const saved = useAppStore((state) => Boolean(state.saved[video.id]));
@@ -33,7 +35,7 @@ export function VideoMenu({ video, onOpenShare, onOpenReport }: VideoMenuProps) 
   };
 
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={(open) => !open && setShowRating(false)}>
       <DropdownMenuTrigger asChild>
         <button
           type="button"
@@ -43,33 +45,54 @@ export function VideoMenu({ video, onOpenShare, onOpenReport }: VideoMenuProps) 
           <EllipsisVertical className="h-5 w-5" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuItem onClick={downloadVideo}>
+      <DropdownMenuContent
+        align="end"
+        className="w-64 border-white/20 bg-slate-950/95 text-slate-100 shadow-2xl backdrop-blur-xl"
+      >
+        <DropdownMenuItem
+          className="text-slate-100 data-[highlighted]:bg-white/20 data-[highlighted]:text-white"
+          onClick={downloadVideo}
+        >
           <Download className="h-4 w-4" />
           Download
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => toggleSave(video.id)}>
+        <DropdownMenuItem
+          className="text-slate-100 data-[highlighted]:bg-white/20 data-[highlighted]:text-white"
+          onClick={() => toggleSave(video.id)}
+        >
           <Heart className={cn("h-4 w-4", saved && "fill-primary text-primary")} />
           {saved ? "Saved" : "Save"}
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={onOpenShare}>
+        <DropdownMenuItem
+          className="text-slate-100 data-[highlighted]:bg-white/20 data-[highlighted]:text-white"
+          onClick={onOpenShare}
+        >
           <Share2 className="h-4 w-4" />
           Share
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => updateSettings({ autoScroll: !settings.autoScroll })}>
+        <DropdownMenuItem
+          className="text-slate-100 data-[highlighted]:bg-white/20 data-[highlighted]:text-white"
+          onClick={() => updateSettings({ autoScroll: !settings.autoScroll })}
+        >
           <Sparkles className="h-4 w-4" />
           Auto-scroll {settings.autoScroll ? "on" : "off"}
         </DropdownMenuItem>
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger>
-            <Heart className="h-4 w-4" />
-            Rate
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent className="w-72">
-            <DropdownMenuLabel>
+        <DropdownMenuItem
+          className="text-slate-100 data-[highlighted]:bg-white/20 data-[highlighted]:text-white"
+          onSelect={(event) => {
+            event.preventDefault();
+            setShowRating((value) => !value);
+          }}
+        >
+          <Heart className="h-4 w-4" />
+          Rate
+        </DropdownMenuItem>
+        {showRating ? (
+          <>
+            <DropdownMenuLabel className="text-slate-300">
               <div className="space-y-1">
                 <p>Rate this clip</p>
-                <p className="text-xs font-normal normal-case tracking-normal text-muted-foreground">
+                <p className="text-xs font-normal normal-case tracking-normal text-slate-400">
                   Current {rating || video.rating.toFixed(1)} · Avg {video.rating.toFixed(1)}
                 </p>
               </div>
@@ -77,14 +100,20 @@ export function VideoMenu({ video, onOpenShare, onOpenReport }: VideoMenuProps) 
             <div className="px-3 py-2">
               <StarRating value={rating} onChange={(value) => rateVideo(video.id, value)} />
             </div>
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
+          </>
+        ) : null}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => markNotInterested(video.id)}>
+        <DropdownMenuItem
+          className="text-slate-100 data-[highlighted]:bg-white/20 data-[highlighted]:text-white"
+          onClick={() => markNotInterested(video.id)}
+        >
           <ThumbsDown className="h-4 w-4" />
           Not interested
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={onOpenReport}>
+        <DropdownMenuItem
+          className="text-slate-100 data-[highlighted]:bg-red-500/25 data-[highlighted]:text-red-100"
+          onClick={onOpenReport}
+        >
           <Flag className="h-4 w-4" />
           Report
         </DropdownMenuItem>

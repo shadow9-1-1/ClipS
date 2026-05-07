@@ -23,7 +23,7 @@ export function ActionBar({ video, creator, liked, following, onLike, onComments
   return (
     <div className="pointer-events-auto flex h-full flex-col items-center justify-end gap-4 pb-3">
       <Link
-        href={`/profile/${creator.username}`}
+        href={`/profile/${encodeURIComponent(creator.username)}`}
         className="group flex flex-col items-center gap-2 text-center"
         aria-label={`Open ${creator.displayName}'s profile`}
       >
@@ -66,11 +66,11 @@ export function ActionBar({ video, creator, liked, following, onLike, onComments
           onLike();
         }}
         whileTap={{ scale: 0.92 }}
-        className="flex flex-col items-center gap-1 text-white/90 transition hover:text-primary"
+        className={cn("flex flex-col items-center gap-1 text-white/90 transition hover:text-primary", liked && "text-red-400")}
         aria-label={liked ? "Unlike video" : "Like video"}
       >
-        <span className={cn("flex h-14 w-14 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm transition", liked && "bg-primary/20 text-primary") }>
-          <Heart className={cn("h-7 w-7", liked && "fill-primary text-primary")} />
+        <span className={cn("flex h-14 w-14 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm transition", liked && "bg-red-500/20 text-red-500") }>
+          <Heart className={cn("h-7 w-7", liked && "fill-red-500 text-red-500")} />
         </span>
         <span className="text-xs font-medium tabular-nums">{video.likes.toLocaleString()}</span>
       </motion.button>

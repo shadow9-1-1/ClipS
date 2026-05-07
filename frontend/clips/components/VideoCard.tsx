@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { BadgeCheck, Clock3, Music2, Hash } from "lucide-react";
+import Link from "next/link";
 import type { Video } from "@/data/mock";
 import { getUser } from "@/data/mock";
 import { useAppStore } from "@/lib/store";
@@ -56,9 +57,9 @@ export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) 
         onDoubleTapLike={() => setLiked(video.id, true)}
       />
 
-      <div className="absolute inset-0 flex items-end justify-between gap-4 p-4 sm:p-6 md:p-8">
+      <div className="pointer-events-none absolute inset-0 z-20 flex items-end justify-between gap-4 p-4 sm:p-6 md:p-8">
         <div className="pointer-events-auto max-w-2xl space-y-3 pb-2 pr-16 md:pr-0">
-          <div className="flex items-center gap-3 text-sm text-white/80">
+          <Link href={`/profile/${creator.username}`} className="inline-flex items-center gap-3 text-sm text-white/80" aria-label={`Open ${creator.displayName}'s profile`}>
             <img src={creator.avatar} alt={creator.displayName} className="h-11 w-11 rounded-2xl border border-white/10 object-cover" />
             <div>
               <div className="flex items-center gap-2 text-white">
@@ -67,11 +68,11 @@ export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) 
               </div>
               <p className="text-xs text-white/65">@{creator.username}</p>
             </div>
-          </div>
+          </Link>
 
-          <div className="glass max-w-2xl rounded-[2rem] p-5 text-sm leading-relaxed text-white/90">
-            <p className="text-base font-medium text-white">{video.caption}</p>
-            <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium text-white/70">
+          <div className="glass group/info max-w-2xl rounded-[2rem] p-5 text-sm leading-relaxed text-white/90 transition-all duration-300 ease-out md:max-w-[22rem] md:p-4 md:hover:max-w-2xl md:hover:p-5">
+            <p className="text-base font-medium text-white transition-all duration-300 md:line-clamp-2 md:group-hover/info:line-clamp-none">{video.caption}</p>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium text-white/70 transition-all duration-300 md:max-h-0 md:translate-y-1 md:overflow-hidden md:opacity-0 md:group-hover/info:max-h-24 md:group-hover/info:translate-y-0 md:group-hover/info:opacity-100">
               {video.tags.map((tag) => (
                 <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-white/10 px-3 py-1.5">
                   <Hash className="h-3 w-3" />
@@ -79,7 +80,7 @@ export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) 
                 </span>
               ))}
             </div>
-            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-white/70">
+            <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-white/70 transition-all duration-300 md:max-h-0 md:translate-y-1 md:overflow-hidden md:opacity-0 md:group-hover/info:max-h-24 md:group-hover/info:translate-y-0 md:group-hover/info:opacity-100">
               <span className="inline-flex items-center gap-1">
                 <Music2 className="h-3.5 w-3.5 text-primary" />
                 {video.music}
@@ -97,7 +98,7 @@ export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) 
           </div>
         </div>
 
-        <div className="pb-10 md:pb-4">
+        <div className="pointer-events-auto pb-10 md:pb-4">
           <ActionBar
             video={video}
             creator={creator}

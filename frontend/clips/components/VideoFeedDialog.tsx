@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import type { Video } from "@/data/mock";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { DialogClose } from "@radix-ui/react-dialog";
 import { VideoCard } from "@/components/VideoCard";
 
@@ -50,6 +50,7 @@ export function VideoFeedDialog({ open, onOpenChange, videos, startIndex }: Vide
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="h-dvh w-dvw max-w-none rounded-none border-none bg-background p-0">
+        <DialogTitle className="sr-only">Video feed viewer</DialogTitle>
         <DialogClose className="absolute right-4 top-4 z-20 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/60">
           <X className="h-5 w-5" />
         </DialogClose>

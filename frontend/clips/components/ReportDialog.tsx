@@ -106,7 +106,7 @@ export function ReportDialog({ open, onOpenChange, video }: ReportDialogProps) {
             <button
               type="button"
               onClick={submit}
-              className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:scale-[1.01]"
+              className="inline-flex h-11 items-center justify-center rounded-full border border-border bg-white/10 px-5 text-sm font-semibold text-foreground transition hover:scale-[1.01] hover:bg-white/15"
             >
               Submit report
             </button>

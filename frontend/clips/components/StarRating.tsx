@@ -19,16 +19,26 @@ export function StarRating({ value, onChange, size = "md" }: StarRatingProps) {
           <button
             key={starValue}
             type="button"
-            onClick={() => onChange?.(starValue)}
+            onMouseDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+            }}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onChange?.(starValue);
+            }}
             className={cn(
-              "rounded-full transition hover:scale-110",
+              "rounded-full transition hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/70",
               onChange ? "cursor-pointer" : "cursor-default"
             )}
           >
             <Star
               className={cn(
                 size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4",
-                active ? "fill-primary text-primary" : "text-muted-foreground"
+                active
+                  ? "fill-amber-300 text-amber-300 drop-shadow-[0_0_6px_rgba(252,187,0,0.55)]"
+                  : "fill-transparent text-slate-500"
               )}
             />
           </button>

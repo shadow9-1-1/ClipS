@@ -17,8 +17,11 @@ type ProfileScreenProps = {
 export function ProfileScreen({ username }: ProfileScreenProps) {
   const router = useRouter();
   const currentProfile = useMyProfile();
-  const ownProfile = !username || username === currentProfile.username;
-  const profile = ownProfile ? currentProfile : getUserByUsername(username ?? "");
+  const normalizedUsername = username?.trim().replace(/^@/, "").toLowerCase();
+  const ownProfile = !normalizedUsername || normalizedUsername === currentProfile.username.toLowerCase();
+  const foundProfile = ownProfile ? currentProfile : getUserByUsername(normalizedUsername ?? "");
+  const profile = foundProfile ?? currentProfile;
+  const profileMissing = !ownProfile && !foundProfile;
   const likedMap = useAppStore((state) => state.liked);
   const savedMap = useAppStore((state) => state.saved);
   const followingMap = useAppStore((state) => state.following);
@@ -41,6 +44,24 @@ export function ProfileScreen({ username }: ProfileScreenProps) {
   }, [followingMap, ownProfile, profile.id]);
 
   const selectedList = tab === "videos" ? profileVideos : tab === "liked" ? likedVideos : savedVideos;
+
+  if (profileMissing) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+        <section className="glass rounded-[2.5rem] p-8 text-center">
+          <h1 className="text-2xl font-semibold">Profile not found</h1>
+          <p className="mt-2 text-sm text-muted-foreground">The user you opened does not exist.</p>
+          <button
+            type="button"
+            onClick={() => router.push("/profile")}
+            className="mt-6 inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:scale-[1.01]"
+          >
+            Go to your profile
+          </button>
+        </section>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">

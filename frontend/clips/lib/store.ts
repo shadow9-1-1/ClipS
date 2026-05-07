@@ -34,6 +34,7 @@ type ReportRecord = {
 type ProfileEdits = Partial<Pick<User, "avatar" | "bio" | "displayName" | "username">>;
 
 export type AppState = {
+  allVideos: Video[];
   videos: Video[];
   comments: Comment[];
   liked: Record<string, boolean>;
@@ -46,6 +47,7 @@ export type AppState = {
   settings: Settings;
   isAuthed: boolean;
   isLoading: boolean;
+  hasMoreVideos: boolean;
   error: ToastableError | null;
   toggleLike: (videoId: string) => void;
   setLiked: (videoId: string, liked: boolean) => void;
@@ -58,12 +60,14 @@ export type AppState = {
   addVideo: (video: Omit<Video, "id" | "likes" | "commentCount" | "shares" | "saves" | "rating" | "ratingCount" | "createdAt" | "userId"> & { src: string; poster: string; orientation: Video["orientation"] }) => void;
   updateProfile: (profile: ProfileEdits) => void;
   updateSettings: (settings: Partial<Settings>) => void;
+  loadMoreVideos: () => void;
   setAuthed: (isAuthed: boolean) => void;
   setLoading: (isLoading: boolean) => void;
   setError: (error: ToastableError | null) => void;
 };
 
 const cloneVideos = () => mockVideos.map((video) => ({ ...video }));
+const FEED_PAGE_SIZE = 6;
 
 const initialLiked: Record<string, boolean> = {
   v1: true,
@@ -90,7 +94,8 @@ function clampRating(value: number) {
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  videos: cloneVideos(),
+  allVideos: cloneVideos(),
+  videos: cloneVideos().slice(0, FEED_PAGE_SIZE),
   comments: mockComments.map((comment) => ({ ...comment })),
   liked: { ...initialLiked },
   saved: { ...initialSaved },
@@ -108,6 +113,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   isAuthed: true,
   isLoading: true,
+  hasMoreVideos: cloneVideos().length > FEED_PAGE_SIZE,
   error: null,
   toggleLike: (videoId) => {
     const { liked, videos } = get();
@@ -232,7 +238,11 @@ export const useAppStore = create<AppState>((set, get) => ({
       createdAt,
     };
 
-    set(({ videos }) => ({ videos: [nextVideo, ...videos] }));
+    set(({ allVideos, videos }) => ({
+      allVideos: [nextVideo, ...allVideos],
+      videos: [nextVideo, ...videos],
+      hasMoreVideos: allVideos.length + 1 > videos.length + 1,
+    }));
   },
   updateProfile: (profile) => {
     set(({ profileEdits }) => ({
@@ -247,6 +257,22 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   updateSettings: (settings) => {
     set(({ settings: current }) => ({ settings: { ...current, ...settings } }));
+  },
+  loadMoreVideos: () => {
+    const { allVideos, videos, hasMoreVideos } = get();
+    if (!hasMoreVideos) return;
+
+    const nextPage = allVideos.slice(videos.length, videos.length + FEED_PAGE_SIZE);
+    if (nextPage.length === 0) {
+      set({ hasMoreVideos: false });
+      return;
+    }
+
+    const nextVisible = [...videos, ...nextPage];
+    set({
+      videos: nextVisible,
+      hasMoreVideos: nextVisible.length < allVideos.length,
+    });
   },
   setAuthed: (isAuthed) => set({ isAuthed }),
   setLoading: (isLoading) => set({ isLoading }),
