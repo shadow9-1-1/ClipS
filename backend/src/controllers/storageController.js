@@ -44,16 +44,28 @@ const createTemporaryUrl = async (req, res) => {
 };
 
 const accessObjectViaTemporaryUrl = async (req, res) => {
+  const bucket = Array.isArray(req.query.bucket) ? req.query.bucket[0] : req.query.bucket;
+  const key = Array.isArray(req.query.key) ? req.query.key[0] : req.query.key;
+  const expiresAt = Array.isArray(req.query.expiresAt) ? req.query.expiresAt[0] : req.query.expiresAt;
+  const signature = Array.isArray(req.query.signature) ? req.query.signature[0] : req.query.signature;
+  const range = typeof req.headers.range === 'string' ? req.headers.range : undefined;
+
   const object = await getObjectForSecureAccess({
-    bucket: req.query.bucket,
-    key: req.query.key,
-    expiresAt: req.query.expiresAt,
-    signature: req.query.signature,
+    bucket,
+    key,
+    expiresAt,
+    signature,
+    range,
   });
 
   res.setHeader('Content-Type', object.contentType);
+  res.setHeader('Accept-Ranges', 'bytes');
   if (typeof object.contentLength !== 'undefined') {
     res.setHeader('Content-Length', String(object.contentLength));
+  }
+  if (object.contentRange) {
+    res.status(206);
+    res.setHeader('Content-Range', object.contentRange);
   }
   if (object.etag) {
     res.setHeader('ETag', object.etag);

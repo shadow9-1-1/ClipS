@@ -123,6 +123,33 @@ const getPublicUserProfile = async (userId) => {
   };
 };
 
+const getPublicUserProfileByUsername = async (username) => {
+  const normalized = username?.trim().toLowerCase();
+  if (!normalized) {
+    const err = new Error('Username is required');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const user = await User.findOne({ username: normalized })
+    .select('username bio avatarKey active accountStatus createdAt')
+    .lean();
+
+  if (!user || !user.active || user.accountStatus !== 'active') {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  return {
+    id: user._id.toString(),
+    username: user.username,
+    bio: user.bio,
+    avatarKey: user.avatarKey,
+    createdAt: user.createdAt,
+  };
+};
+
 const updateUserPreferences = async (userId, updates) => {
   const user = await User.findById(userId).select('notificationPreferences');
 
@@ -153,5 +180,6 @@ module.exports = {
   getCurrentUserProfile,
   updateCurrentUserProfile,
   getPublicUserProfile,
+  getPublicUserProfileByUsername,
   updateUserPreferences,
 };

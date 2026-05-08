@@ -1,11 +1,22 @@
 const express = require('express');
 
-const { getMe, updateMe, getUserProfile, updatePreferences } = require('../controllers/userController');
+const {
+	getMe,
+	updateMe,
+	getUserProfile,
+	getUserProfileByUsername,
+	updatePreferences,
+} = require('../controllers/userController');
 const { follow, unfollow, followers, following } = require('../controllers/followController');
 const asyncHandler = require('../utils/asyncHandler');
 const protect = require('../middleware/protect');
 const validateRequest = require('../middleware/validateRequest');
-const { updateMeSchema, userIdParamSchema, updatePreferencesSchema } = require('../utils/userSchemas');
+const {
+	updateMeSchema,
+	userIdParamSchema,
+	updatePreferencesSchema,
+	usernameParamSchema,
+} = require('../utils/userSchemas');
 const { emptySchema } = require('../utils/commonSchemas');
 
 const router = express.Router();
@@ -19,6 +30,7 @@ router.delete('/:id/unfollow', validateRequest(userIdParamSchema), asyncHandler(
 router.get('/:id/followers', validateRequest(userIdParamSchema), asyncHandler(followers));
 router.get('/:id/following', validateRequest(userIdParamSchema), asyncHandler(following));
 
+router.get('/username/:username', validateRequest(usernameParamSchema), asyncHandler(getUserProfileByUsername));
 router.get('/:id', validateRequest(userIdParamSchema), asyncHandler(getUserProfile));
 
 module.exports = router;

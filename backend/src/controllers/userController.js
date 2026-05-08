@@ -2,6 +2,7 @@ const {
   getCurrentUserProfile,
   updateCurrentUserProfile,
   getPublicUserProfile,
+  getPublicUserProfileByUsername,
   updateUserPreferences,
 } = require('../services/userService');
 
@@ -33,6 +34,15 @@ const getUserProfile = async (req, res) => {
   });
 };
 
+const getUserProfileByUsername = async (req, res) => {
+  const profile = await getPublicUserProfileByUsername(req.params.username);
+
+  res.status(200).json({
+    status: 'success',
+    data: { user: profile },
+  });
+};
+
 const updatePreferences = async (req, res) => {
   const preferences = await updateUserPreferences(req.user._id, req.body);
 
@@ -46,5 +56,6 @@ module.exports = {
   getMe,
   updateMe,
   getUserProfile,
+  getUserProfileByUsername,
   updatePreferences,
 };

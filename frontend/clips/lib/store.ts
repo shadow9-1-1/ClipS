@@ -9,8 +9,11 @@ import {
   type Comment,
   type User,
   type Video,
-  videos as mockVideos,
 } from "@/data/mock";
+import { getApiPrefix } from "@/lib/api";
+import { getBearerAuthHeader } from "@/lib/auth-headers";
+import { fetchVideos, createPresignedUrl } from "@/lib/backend-client";
+import { mapApiVideoToUi } from "@/lib/backend-adapters";
 
 type ToastableError = {
   title: string;
@@ -32,6 +35,15 @@ type ReportRecord = {
 };
 
 type ProfileEdits = Partial<Pick<User, "avatar" | "bio" | "displayName" | "username">>;
+
+type NewVideoInput = Omit<
+  Video,
+  "id" | "likes" | "commentCount" | "shares" | "saves" | "rating" | "ratingCount" | "createdAt" | "userId"
+> & {
+  src: string;
+  poster: string;
+  orientation: Video["orientation"];
+};
 
 export type AppState = {
   allVideos: Video[];
@@ -57,7 +69,7 @@ export type AppState = {
   markNotInterested: (videoId: string) => void;
   reportVideo: (videoId: string, reason: string, details?: string) => void;
   addComment: (videoId: string, text: string) => void;
-  addVideo: (video: Omit<Video, "id" | "likes" | "commentCount" | "shares" | "saves" | "rating" | "ratingCount" | "createdAt" | "userId"> & { src: string; poster: string; orientation: Video["orientation"] }) => void;
+  addVideo: (video: Video | NewVideoInput) => void;
   updateProfile: (profile: ProfileEdits) => void;
   updateSettings: (settings: Partial<Settings>) => void;
   loadMoreVideos: () => void;
@@ -66,7 +78,6 @@ export type AppState = {
   setError: (error: ToastableError | null) => void;
 };
 
-const cloneVideos = () => mockVideos.map((video) => ({ ...video }));
 const FEED_PAGE_SIZE = 6;
 
 const initialLiked: Record<string, boolean> = {
@@ -94,8 +105,8 @@ function clampRating(value: number) {
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  allVideos: cloneVideos(),
-  videos: cloneVideos().slice(0, FEED_PAGE_SIZE),
+  allVideos: [],
+  videos: [],
   comments: mockComments.map((comment) => ({ ...comment })),
   liked: { ...initialLiked },
   saved: { ...initialSaved },
@@ -112,27 +123,20 @@ export const useAppStore = create<AppState>((set, get) => ({
     language: "English",
   },
   isAuthed: true,
-  isLoading: true,
-  hasMoreVideos: cloneVideos().length > FEED_PAGE_SIZE,
+  isLoading: false,
+  hasMoreVideos: true,
   error: null,
   toggleLike: (videoId) => {
-    const { liked, videos } = get();
-    const active = Boolean(liked[videoId]);
-
-    set({
-      liked: { ...liked, [videoId]: !active },
-      videos: videos.map((video) =>
-        video.id === videoId
-          ? { ...video, likes: Math.max(0, video.likes + (active ? -1 : 1)) }
-          : video
-      ),
-    });
+    const { liked } = get();
+    const next = !liked[videoId];
+    void get().setLiked(videoId, next);
   },
-  setLiked: (videoId, likedValue) => {
+  setLiked: async (videoId, likedValue) => {
     const { liked, videos } = get();
     const active = Boolean(liked[videoId]);
     if (active === likedValue) return;
 
+    const prev = { liked: { ...liked }, videos: [...videos] };
     set({
       liked: { ...liked, [videoId]: likedValue },
       videos: videos.map((video) =>
@@ -141,6 +145,28 @@ export const useAppStore = create<AppState>((set, get) => ({
           : video
       ),
     });
+
+    const auth = getBearerAuthHeader();
+    if (!("Authorization" in auth)) {
+      set({ liked: prev.liked, videos: prev.videos });
+      set({ error: { title: "Sign in required", message: "Please sign in to like videos." } });
+      return;
+    }
+
+    try {
+      const method = likedValue ? "POST" : "DELETE";
+      const res = await fetch(`${getApiPrefix()}/v1/videos/${videoId}/likes`, {
+        method,
+        headers: { ...auth },
+        credentials: "include",
+      });
+      if (!res.ok) {
+        throw new Error("Like request failed");
+      }
+    } catch {
+      set({ liked: prev.liked, videos: prev.videos });
+      set({ error: { title: "Like failed", message: "Could not update like. Please try again." } });
+    }
   },
   toggleSave: (videoId) => {
     const { saved, videos } = get();
@@ -177,9 +203,34 @@ export const useAppStore = create<AppState>((set, get) => ({
       }),
     });
   },
-  toggleFollow: (userId) => {
+  toggleFollow: async (userId) => {
     const { following } = get();
-    set({ following: { ...following, [userId]: !following[userId] } });
+    const next = !following[userId];
+    const prev = { ...following };
+    set({ following: { ...following, [userId]: next } });
+
+    const auth = getBearerAuthHeader();
+    if (!("Authorization" in auth)) {
+      set({ following: prev });
+      set({ error: { title: "Sign in required", message: "Please sign in to follow creators." } });
+      return;
+    }
+
+    try {
+      const method = next ? "POST" : "DELETE";
+      const res = await fetch(
+        `${getApiPrefix()}/v1/users/${userId}/${next ? "follow" : "unfollow"}`,
+        {
+          method,
+          headers: { ...auth },
+          credentials: "include",
+        }
+      );
+      if (!res.ok) throw new Error("Follow request failed");
+    } catch {
+      set({ following: prev });
+      set({ error: { title: "Follow failed", message: "Could not update follow. Please try again." } });
+    }
   },
   markNotInterested: (videoId) => {
     const { notInterested } = get();
@@ -219,29 +270,40 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   addVideo: (video) => {
     const createdAt = new Date().toISOString();
-    const nextVideo: Video = {
-      id: `v_${Date.now()}`,
-      userId: currentUserId,
-      caption: video.caption,
-      music: video.music,
-      tags: video.tags,
-      orientation: video.orientation,
-      src: video.src,
-      poster: video.poster,
-      likes: 0,
-      commentCount: 0,
-      shares: 0,
-      saves: 0,
-      rating: 0,
-      ratingCount: 0,
-      duration: 30,
-      createdAt,
-    };
+    const nextVideo: Video = "id" in video
+      ? {
+          ...video,
+          createdAt: video.createdAt || createdAt,
+          likes: video.likes || 0,
+          commentCount: video.commentCount || 0,
+          shares: video.shares || 0,
+          saves: video.saves || 0,
+          rating: video.rating || 0,
+          ratingCount: video.ratingCount || 0,
+        }
+      : {
+          id: `v_${Date.now()}`,
+          userId: currentUserId,
+          caption: video.caption,
+          music: video.music,
+          tags: video.tags,
+          orientation: video.orientation,
+          src: video.src,
+          poster: video.poster,
+          likes: 0,
+          commentCount: 0,
+          shares: 0,
+          saves: 0,
+          rating: 0,
+          ratingCount: 0,
+          duration: 30,
+          createdAt,
+        };
 
     set(({ allVideos, videos }) => ({
       allVideos: [nextVideo, ...allVideos],
       videos: [nextVideo, ...videos],
-      hasMoreVideos: allVideos.length + 1 > videos.length + 1,
+      hasMoreVideos: true,
     }));
   },
   updateProfile: (profile) => {
@@ -258,21 +320,50 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateSettings: (settings) => {
     set(({ settings: current }) => ({ settings: { ...current, ...settings } }));
   },
-  loadMoreVideos: () => {
-    const { allVideos, videos, hasMoreVideos } = get();
-    if (!hasMoreVideos) return;
+  loadMoreVideos: async () => {
+    const { hasMoreVideos, isLoading, videos } = get();
+    if (!hasMoreVideos || isLoading) return;
 
-    const nextPage = allVideos.slice(videos.length, videos.length + FEED_PAGE_SIZE);
-    if (nextPage.length === 0) {
-      set({ hasMoreVideos: false });
-      return;
+    set({ isLoading: true });
+    try {
+      const skip = videos.length;
+      const response = await fetchVideos(FEED_PAGE_SIZE, skip);
+      const raw = (response?.data?.videos || []) as any[];
+      const total = typeof response?.total === "number" ? response.total : 0;
+      const mapped = raw.map(mapApiVideoToUi).filter((v) => v.id);
+
+      await Promise.all(
+        raw.map(async (apiVideo, index) => {
+          if (!mapped[index]) return;
+          if (apiVideo?.videoURL || !apiVideo?.videoObjectKey) return;
+          try {
+            const presigned = await createPresignedUrl(apiVideo.videoObjectKey);
+            const accessUrl = presigned?.data?.accessUrl;
+            if (accessUrl) {
+              mapped[index] = {
+                ...mapped[index],
+                src: accessUrl,
+              };
+            }
+          } catch {
+            // keep fallback src
+          }
+        })
+      );
+
+      const nextVideos = [...videos, ...mapped];
+      const more = total > 0 ? nextVideos.length < total : mapped.length === FEED_PAGE_SIZE;
+
+      set({
+        videos: nextVideos,
+        allVideos: nextVideos,
+        hasMoreVideos: more,
+      });
+    } catch (err) {
+      set({ error: { title: "Feed error", message: "Could not load videos." } });
+    } finally {
+      set({ isLoading: false });
     }
-
-    const nextVisible = [...videos, ...nextPage];
-    set({
-      videos: nextVisible,
-      hasMoreVideos: nextVisible.length < allVideos.length,
-    });
   },
   setAuthed: (isAuthed) => set({ isAuthed }),
   setLoading: (isLoading) => set({ isLoading }),

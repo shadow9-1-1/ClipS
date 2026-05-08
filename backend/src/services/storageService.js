@@ -101,7 +101,7 @@ const generateTemporaryAccessUrl = ({ bucket, key, expiresIn }) => {
   };
 };
 
-const getObjectForSecureAccess = async ({ bucket, key, expiresAt, signature }) => {
+const getObjectForSecureAccess = async ({ bucket, key, expiresAt, signature, range }) => {
   const targetBucket = bucket || storageConfig.bucket;
   const expectedSignature = buildSignature({
     bucket: targetBucket,
@@ -126,18 +126,39 @@ const getObjectForSecureAccess = async ({ bucket, key, expiresAt, signature }) =
     throw err;
   }
 
-  const response = await s3Client.send(
-    new GetObjectCommand({
-      Bucket: targetBucket,
-      Key: key,
-    })
-  );
+  let response;
+  try {
+    response = await s3Client.send(
+      new GetObjectCommand({
+        Bucket: targetBucket,
+        Key: key,
+        Range: range,
+      })
+    );
+  } catch (err) {
+    const status = err?.$metadata?.httpStatusCode;
+    const code = err?.name || err?.Code || err?.code;
+    let statusCode = status || 502;
+
+    if (status === 404 || code === 'NoSuchKey' || code === 'NotFound' || code === 'NoSuchBucket') {
+      statusCode = 404;
+    } else if (status === 403 || code === 'AccessDenied') {
+      statusCode = 403;
+    } else if (code === 'InvalidRange') {
+      statusCode = 416;
+    }
+
+    const mapped = new Error(err?.message || 'Failed to fetch object');
+    mapped.statusCode = statusCode;
+    throw mapped;
+  }
 
   return {
     stream: response.Body,
     contentType: response.ContentType || 'application/octet-stream',
     contentLength: response.ContentLength,
     etag: response.ETag,
+    contentRange: response.ContentRange,
   };
 };
 

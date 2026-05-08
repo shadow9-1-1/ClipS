@@ -65,21 +65,6 @@ async function fetchMeOnce(apiPrefix: string): Promise<FetchMeResult> {
   }
 
   if (res.status === 401) {
-    // If backend reports unauthorized, but we have a dev/mock token stored,
-    // parse token to provide a local user object so dev-only admin access works.
-    const token = AuthService.getToken();
-    const parsed = token ? AuthService.parseToken(token) : null;
-    if (parsed) {
-      return {
-        kind: "ok",
-        user: {
-          id: parsed.id ?? "dev_user",
-          username: parsed.username ?? parsed.email?.split("@")[0] ?? "dev_user",
-          email: parsed.email ?? "dev@example.com",
-          role: parsed.role ?? "user",
-        },
-      };
-    }
     return { kind: "unauthorized" };
   }
 

@@ -3,23 +3,31 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
-import { videos, getUser } from "@/data/mock";
 import { useAppStore } from "@/lib/store";
 import { VideoFeedDialog } from "@/components/VideoFeedDialog";
+import { useApiUser } from "@/hooks/useApiUser";
+import { useEffect } from "react";
 
 export function ExploreScreen() {
+  const videos = useAppStore((state) => state.allVideos);
   const notInterested = useAppStore((state) => state.notInterested);
+  const loadMoreVideos = useAppStore((state) => state.loadMoreVideos);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (videos.length === 0) {
+      void loadMoreVideos();
+    }
+  }, [loadMoreVideos, videos.length]);
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
     return videos.filter((video) => {
       if (notInterested[video.id]) return false;
       if (!term) return true;
-      const creator = getUser(video.userId);
-      return [video.caption, video.music, ...video.tags, creator.displayName, creator.username]
+      return [video.caption, video.music, ...video.tags]
         .join(" ")
         .toLowerCase()
         .includes(term);
@@ -47,32 +55,37 @@ export function ExploreScreen() {
       </section>
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {filtered.map((video, index) => {
-          const creator = getUser(video.userId);
-          return (
-            <button
-              key={video.id}
-              type="button"
-              onClick={() => {
-                setSelectedIndex(index);
-                setDialogOpen(true);
-              }}
-              className="group overflow-hidden rounded-[2.5rem] border border-border bg-white/5 text-left transition hover:-translate-y-1 hover:bg-white/10"
-            >
-              <div className="relative aspect-[9/12] overflow-hidden">
-                <img src={video.poster} alt={video.caption} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                  <p className="text-sm font-semibold">{creator.displayName}</p>
-                  <p className="line-clamp-2 text-sm text-white/80">{video.caption}</p>
-                </div>
+        {filtered.map((video, index) => (
+          <button
+            key={video.id}
+            type="button"
+            onClick={() => {
+              setSelectedIndex(index);
+              setDialogOpen(true);
+            }}
+            className="group overflow-hidden rounded-[2.5rem] border border-border bg-white/5 text-left transition hover:-translate-y-1 hover:bg-white/10"
+          >
+            <div className="relative aspect-[9/12] overflow-hidden">
+              <img src={video.poster} alt={video.caption} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                <CreatorLine userId={video.userId} />
+                <p className="line-clamp-2 text-sm text-white/80">{video.caption}</p>
               </div>
-            </button>
-          );
-        })}
+            </div>
+          </button>
+        ))}
       </section>
 
       <VideoFeedDialog open={dialogOpen} onOpenChange={setDialogOpen} videos={filtered} startIndex={selectedIndex} />
     </motion.div>
   );
+}
+
+function CreatorLine({ userId }: { userId: string }) {
+  const { user } = useApiUser(userId);
+  if (!user) {
+    return <p className="text-sm font-semibold">Creator</p>;
+  }
+  return <p className="text-sm font-semibold">{user.displayName}</p>;
 }

@@ -5,10 +5,11 @@ import { motion } from "framer-motion";
 import { BadgeCheck, Clock3, Music2, Hash } from "lucide-react";
 import Link from "next/link";
 import type { Video } from "@/data/mock";
-import { getUser } from "@/data/mock";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { useMobile } from "@/hooks/use-mobile";
+import { useApiUser } from "@/hooks/useApiUser";
+import { buildAvatarFromUsername } from "@/lib/placeholders";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { ActionBar } from "@/components/ActionBar";
 import { CommentsDrawer } from "@/components/CommentsDrawer";
@@ -23,7 +24,17 @@ type VideoCardProps = {
 };
 
 export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) {
-  const creator = getUser(video.userId);
+  const { user: creator } = useApiUser(video.userId);
+  const creatorProfile = creator ?? {
+    id: video.userId,
+    username: "creator",
+    displayName: "Creator",
+    avatar: buildAvatarFromUsername("creator"),
+    bio: "",
+    verified: false,
+    followers: 0,
+    following: 0,
+  };
   const isMobile = useMobile();
   const liked = useAppStore((state) => Boolean(state.liked[video.id]));
   const following = useAppStore((state) => Boolean(state.following[video.userId]));
@@ -68,14 +79,14 @@ export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) 
 
       <div className="pointer-events-none absolute inset-0 z-20 flex items-end justify-between gap-4 p-4 sm:p-6 md:p-8">
         <div className="pointer-events-auto max-w-2xl space-y-3 pb-2 pr-16 md:pr-0">
-          <Link href={`/profile/${creator.username}`} className="inline-flex items-center gap-3 text-sm text-white/80" aria-label={`Open ${creator.displayName}'s profile`}>
-            <img src={creator.avatar} alt={creator.displayName} className="h-11 w-11 rounded-2xl border border-white/10 object-cover" />
+          <Link href={`/profile/${creatorProfile.username}`} className="inline-flex items-center gap-3 text-sm text-white/80" aria-label={`Open ${creatorProfile.displayName}'s profile`}>
+            <img src={creatorProfile.avatar} alt={creatorProfile.displayName} className="h-11 w-11 rounded-2xl border border-white/10 object-cover" />
             <div>
               <div className="flex items-center gap-2 text-white">
-                <span className="font-semibold">{creator.displayName}</span>
-                {creator.verified ? <BadgeCheck className="h-4 w-4 text-primary" /> : null}
+                <span className="font-semibold">{creatorProfile.displayName}</span>
+                {creatorProfile.verified ? <BadgeCheck className="h-4 w-4 text-primary" /> : null}
               </div>
-              <p className="text-xs text-white/65">@{creator.username}</p>
+              <p className="text-xs text-white/65">@{creatorProfile.username}</p>
             </div>
           </Link>
 
@@ -148,7 +159,7 @@ export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) 
         <div className="pointer-events-auto pb-10 md:pb-4">
           <ActionBar
             video={video}
-            creator={creator}
+            creator={creatorProfile}
             liked={liked}
             following={following}
             onLike={() => setLiked(video.id, !liked)}

@@ -1,14 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { BadgeCheck, Edit3, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { currentUserId, getUserByUsername, getVideosByUser, users } from "@/data/mock";
-import { useAppStore, useMyProfile } from "@/lib/store";
+import { useAppStore } from "@/lib/store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { VideoFeedDialog } from "@/components/VideoFeedDialog";
 import { FollowListDialog } from "@/components/FollowListDialog";
+import { useAuth } from "@/hooks/useAuth";
+import { useApiUser, useApiUserByUsername } from "@/hooks/useApiUser";
+import { mapApiUserToUi } from "@/lib/backend-adapters";
+import { fetchFollowers, fetchFollowing } from "@/lib/backend-client";
 
 type ProfileScreenProps = {
   username?: string;
@@ -16,39 +19,77 @@ type ProfileScreenProps = {
 
 export function ProfileScreen({ username }: ProfileScreenProps) {
   const router = useRouter();
-  const currentProfile = useMyProfile();
+  const { user: authUser } = useAuth();
   const normalizedUsername = username?.trim().replace(/^@/, "").toLowerCase();
-  const ownProfile = !normalizedUsername || normalizedUsername === currentProfile.username.toLowerCase();
-  const foundProfile = ownProfile ? currentProfile : getUserByUsername(normalizedUsername ?? "");
-  const profile = foundProfile ?? currentProfile;
-  const profileMissing = !ownProfile && !foundProfile;
+  const { user: apiUserByUsername } = useApiUserByUsername(normalizedUsername);
+  const { user: apiCurrentUser } = useApiUser(authUser?.id);
+  const ownProfile = !normalizedUsername || normalizedUsername === apiCurrentUser?.username?.toLowerCase();
+  const profile = ownProfile ? apiCurrentUser : apiUserByUsername;
+  const profileMissing = !ownProfile && !profile;
   const likedMap = useAppStore((state) => state.liked);
   const savedMap = useAppStore((state) => state.saved);
-  const followingMap = useAppStore((state) => state.following);
   const allVideos = useAppStore((state) => state.videos);
+  const loadMoreVideos = useAppStore((state) => state.loadMoreVideos);
   const [tab, setTab] = useState("videos");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
   const [followDialogOpen, setFollowDialogOpen] = useState(false);
+  const [followers, setFollowers] = useState<ReturnType<typeof mapApiUserToUi>[]>([]);
+  const [following, setFollowing] = useState<ReturnType<typeof mapApiUserToUi>[]>([]);
 
-  const profileVideos = useMemo(() => getVideosByUser(profile.id), [profile.id]);
+  useEffect(() => {
+    if (allVideos.length === 0) {
+      void loadMoreVideos();
+    }
+  }, [allVideos.length, loadMoreVideos]);
+
+  const profileVideos = useMemo(
+    () => allVideos.filter((video) => video.userId === profile?.id),
+    [allVideos, profile?.id]
+  );
   const likedVideos = useMemo(() => allVideos.filter((video) => likedMap[video.id]), [allVideos, likedMap]);
   const savedVideos = useMemo(() => allVideos.filter((video) => savedMap[video.id]), [allVideos, savedMap]);
   const videosLabel = `Videos (${profileVideos.length})`;
   const likedLabel = ownProfile ? `My likes (${likedVideos.length})` : `Liked (${likedVideos.length})`;
   const savedLabel = ownProfile ? `My saved (${savedVideos.length})` : `Saved (${savedVideos.length})`;
 
-  const followers = useMemo(() => users.filter((user) => user.id !== profile.id).slice(0, 4), [profile.id]);
-  const following = useMemo(() => {
-    if (ownProfile) {
-      return users.filter((user) => followingMap[user.id]);
-    }
-    return users.filter((user) => user.id !== profile.id && user.id !== currentUserId).slice(0, 4);
-  }, [followingMap, ownProfile, profile.id]);
+  useEffect(() => {
+    let cancelled = false;
+    if (!followDialogOpen || !profile?.id) return;
+
+    const load = async () => {
+      try {
+        const [followersRes, followingRes] = await Promise.all([
+          fetchFollowers(profile.id),
+          fetchFollowing(profile.id),
+        ]);
+        const mappedFollowers = (followersRes?.data?.followers ?? []).map((u: any) =>
+          mapApiUserToUi(u)
+        );
+        const mappedFollowing = (followingRes?.data?.following ?? []).map((u: any) =>
+          mapApiUserToUi(u)
+        );
+        if (!cancelled) {
+          setFollowers(mappedFollowers);
+          setFollowing(mappedFollowing);
+        }
+      } catch {
+        if (!cancelled) {
+          setFollowers([]);
+          setFollowing([]);
+        }
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [followDialogOpen, profile?.id]);
 
   const selectedList = tab === "videos" ? profileVideos : tab === "liked" ? likedVideos : savedVideos;
 
-  if (profileMissing) {
+  if (profileMissing || !profile) {
     return (
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
         <section className="glass rounded-[2.5rem] p-8 text-center">
@@ -82,10 +123,10 @@ export function ProfileScreen({ username }: ProfileScreenProps) {
               </div>
               <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                 <button type="button" onClick={() => setFollowDialogOpen(true)} className="rounded-full border border-border bg-white/5 px-4 py-2 transition hover:bg-white/10">
-                  <span className="font-semibold text-foreground">{profile.followers.toLocaleString()}</span> followers
+                  <span className="font-semibold text-foreground">{followers.length.toLocaleString()}</span> followers
                 </button>
                 <button type="button" onClick={() => setFollowDialogOpen(true)} className="rounded-full border border-border bg-white/5 px-4 py-2 transition hover:bg-white/10">
-                  <span className="font-semibold text-foreground">{profile.following.toLocaleString()}</span> following
+                  <span className="font-semibold text-foreground">{following.length.toLocaleString()}</span> following
                 </button>
               </div>
               <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">{profile.bio}</p>
@@ -169,7 +210,7 @@ function SectionLabel({ title, description }: { title: string; description: stri
   );
 }
 
-function Grid({ videos, onSelect }: { videos: ReturnType<typeof getVideosByUser>; onSelect: (index: number) => void }) {
+function Grid({ videos, onSelect }: { videos: ReturnType<typeof useAppStore.getState>['videos']; onSelect: (index: number) => void }) {
   if (videos.length === 0) {
     return <div className="mt-6 rounded-[2rem] border border-dashed border-border bg-white/5 p-10 text-center text-sm text-muted-foreground">No clips in this section yet.</div>;
   }

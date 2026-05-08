@@ -6,6 +6,9 @@ import { Camera, Film, UploadCloud } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAppStore } from "@/lib/store";
+import { getApiPrefix } from "@/lib/api";
+import { getBearerAuthHeader } from "@/lib/auth-headers";
+import { mapApiVideoToUi } from "@/lib/backend-adapters";
 
 function buildPoster(label: string) {
   const svg = `
@@ -48,7 +51,7 @@ export function UploadScreen() {
     return () => URL.revokeObjectURL(objectUrl);
   }, [file]);
 
-  const submit = () => {
+  const submit = async () => {
     if (!file || !preview) {
       setError({ title: "Missing video", message: "Choose a clip before uploading." });
       return;
@@ -60,27 +63,52 @@ export function UploadScreen() {
       return;
     }
 
+    const auth = getBearerAuthHeader();
+    if (!("Authorization" in auth)) {
+      setError({ title: "Sign in required", message: "Please sign in to upload." });
+      return;
+    }
+
     setSubmitting(true);
-    window.setTimeout(() => {
-      if (Math.random() < 0.08) {
-        setSubmitting(false);
-        setError({ title: "Upload failed", message: "A simulated upload error blocked this clip. Try again." });
-        return;
+    try {
+      const form = new FormData();
+      form.append("video", file);
+
+      const res = await fetch(`${getApiPrefix()}/v1/videos/upload`, {
+        method: "POST",
+        headers: { ...auth },
+        body: form,
+        credentials: "include",
+      });
+
+      const body = (await res.json().catch(() => ({}))) as {
+        data?: { video?: any; file?: { accessUrl?: string } };
+        message?: string;
+      };
+
+      if (!res.ok) {
+        throw new Error(body?.message || "Upload failed");
       }
 
+      const apiVideo = body?.data?.video || {};
+      const accessUrl = body?.data?.file?.accessUrl;
+      const mapped = mapApiVideoToUi(apiVideo);
       addVideo({
+        ...mapped,
         caption: text,
         music: music.trim() || "Original audio",
         tags: text.split(/\s+/).filter(Boolean).slice(0, 3).map((tag) => `#${tag.replace(/[^a-z0-9]/gi, "").toLowerCase()}`),
-        orientation,
-        src: preview,
-        poster: preview || buildPoster("Uploaded clip"),
-        duration: 0, // Duration will be set on video load in real app
+        src: accessUrl || mapped.src,
+        poster: accessUrl || mapped.poster || buildPoster("Uploaded clip"),
       });
+
       setSubmitting(false);
       toast.success("Clip uploaded");
       router.push("/profile");
-    }, 950);
+    } catch (err) {
+      setSubmitting(false);
+      setError({ title: "Upload failed", message: err instanceof Error ? err.message : "Upload failed." });
+    }
   };
 
   return (

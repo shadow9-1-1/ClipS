@@ -29,6 +29,11 @@ const videoSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    videoBucket: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     duration: {
       type: Number,
       required: [true, 'Duration is required'],

@@ -1,12 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Heart, MessageCircleMore, Send } from "lucide-react";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
-import { useAppStore } from "@/lib/store";
-import { getUser } from "@/data/mock";
+import { getApiPrefix } from "@/lib/api";
+import { getBearerAuthHeader } from "@/lib/auth-headers";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { StarRating } from "@/components/review/StarRating";
 
 type CommentsDrawerProps = {
   open: boolean;
@@ -14,28 +15,98 @@ type CommentsDrawerProps = {
   videoId: string;
 };
 
+type ReviewItem = {
+  id: string;
+  username: string;
+  comment: string;
+  rating: number;
+  likes?: number;
+};
+
 export function CommentsDrawer({ open, onOpenChange, videoId }: CommentsDrawerProps) {
-  const allComments = useAppStore((state) => state.comments);
-  const comments = useMemo(() => allComments.filter((comment) => comment.videoId === videoId), [allComments, videoId]);
-  const addComment = useAppStore((state) => state.addComment);
-  const setError = useAppStore((state) => state.setError);
+  const [comments, setComments] = useState<ReviewItem[]>([]);
   const [draft, setDraft] = useState("");
+  const [rating, setRating] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [localLikes, setLocalLikes] = useState<Record<string, boolean>>({});
 
   const visibleComments = useMemo(() => comments, [comments]);
   const canPost = draft.trim().length > 0;
 
-  const submit = () => {
+  useEffect(() => {
+    let cancelled = false;
+    if (!open) return;
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(
+          `${getApiPrefix()}/v1/videos/${videoId}/reviews`,
+          { cache: "no-store" }
+        );
+        if (!res.ok) return;
+        const json = (await res.json()) as { data?: { reviews?: any[] } };
+        const list = (json?.data?.reviews ?? []).map((review) => ({
+          id: String(review.id || review._id || ""),
+          username: review.username || "User",
+          comment: review.comment || "",
+          rating: Number(review.rating || 0),
+        }));
+        if (!cancelled) setComments(list);
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, videoId]);
+
+  const submit = async () => {
     const text = draft.trim();
     if (!text) return;
-    if (Math.random() < 0.12) {
-      setError({ title: "Could not add comment", message: "A simulated network hiccup blocked this reply. Please try again." });
+    if (rating < 1) {
+      toast.error("Select a rating before posting.");
       return;
     }
 
-    addComment(videoId, text);
-    setDraft("");
-    toast.success("Comment posted");
+    const auth = getBearerAuthHeader();
+    if (!("Authorization" in auth)) {
+      toast.error("Sign in to post a review.");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${getApiPrefix()}/v1/videos/${videoId}/reviews`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            ...auth,
+          },
+          body: JSON.stringify({ rating, comment: text }),
+        }
+      );
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { message?: string };
+        toast.error(body?.message || "Could not add comment.");
+        return;
+      }
+
+      setDraft("");
+      setRating(0);
+      toast.success("Comment posted");
+      onOpenChange(false);
+      onOpenChange(true);
+    } catch {
+      toast.error("Network error. Try again.");
+    }
   };
 
   return (
@@ -65,17 +136,18 @@ export function CommentsDrawer({ open, onOpenChange, videoId }: CommentsDrawerPr
             </div>
           ) : (
             visibleComments.map((comment) => {
-              const author = getUser(comment.userId);
               const liked = Boolean(localLikes[comment.id]);
               return (
                 <div key={comment.id} className="group flex items-start gap-3 rounded-3xl border border-white/10 bg-gradient-to-r from-slate-900/90 to-slate-900/70 p-4 transition hover:border-white/20 hover:bg-slate-900/95">
-                  <img src={author.avatar} alt={author.displayName} className="h-11 w-11 rounded-2xl border border-white/10 object-cover" />
+                  <div className="h-11 w-11 rounded-2xl border border-white/10 bg-white/10" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 text-sm">
-                      <span className="font-semibold text-slate-50">{author.displayName}</span>
-                      <span className="text-xs text-slate-300">@{author.username}</span>
+                      <span className="font-semibold text-slate-50">{comment.username}</span>
+                      {comment.rating ? (
+                        <span className="text-xs text-slate-300">{comment.rating}★</span>
+                      ) : null}
                     </div>
-                    <p className="mt-1.5 text-sm leading-relaxed text-slate-100">{comment.text}</p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-slate-100">{comment.comment}</p>
                     <div className="mt-3 flex items-center gap-4 text-xs text-slate-300">
                       <button
                         type="button"
@@ -83,7 +155,7 @@ export function CommentsDrawer({ open, onOpenChange, videoId }: CommentsDrawerPr
                         className={cn("inline-flex items-center gap-1.5 rounded-full px-2 py-1 transition hover:bg-white/10", liked && "text-red-400")}
                       >
                         <Heart className={cn("h-3.5 w-3.5", liked && "fill-current")} />
-                        {(comment.likes + (liked ? 1 : 0)).toLocaleString()}
+                        {(comment.likes ?? 0 + (liked ? 1 : 0)).toLocaleString()}
                       </button>
                     </div>
                   </div>
@@ -102,15 +174,18 @@ export function CommentsDrawer({ open, onOpenChange, videoId }: CommentsDrawerPr
               maxLength={300}
               className="min-h-20 flex-1 resize-none rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-sm text-slate-100 outline-none placeholder:text-slate-400"
             />
-            <button
-              type="button"
-              onClick={submit}
-              disabled={!canPost}
-              className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Send className="h-4 w-4" />
-              Post
-            </button>
+            <div className="flex flex-col items-end gap-2">
+              <StarRating value={rating} onChange={setRating} />
+              <button
+                type="button"
+                onClick={submit}
+                disabled={!canPost}
+                className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Send className="h-4 w-4" />
+                Post
+              </button>
+            </div>
           </div>
           <div className="mt-2 text-right text-xs text-slate-400">{draft.length}/300</div>
         </div>

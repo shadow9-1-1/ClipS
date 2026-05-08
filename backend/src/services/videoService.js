@@ -4,7 +4,7 @@ const Follow = require('../models/Follow');
 const Review = require('../models/Review');
 const VideoLike = require('../models/VideoLike');
 const { sendNewVideoFromFollowedUserNotification } = require('./notificationService');
-const { uploadVideoObject, deleteObject } = require('./storageService');
+const { uploadVideoObject, deleteObject, generateTemporaryAccessUrl } = require('./storageService');
 const { validateVideoDuration } = require('./videoValidationService');
 
 const reviewCollection = Review.collection.name;
@@ -81,6 +81,7 @@ const buildFeedProjectionPipeline = ({ matchStage, recentSince }) => [
       description: 1,
       videoURL: 1,
       videoObjectKey: 1,
+      videoBucket: 1,
       duration: 1,
       viewsCount: 1,
       status: 1,
@@ -98,12 +99,37 @@ const buildFeedProjectionPipeline = ({ matchStage, recentSince }) => [
   },
 ];
 
+const attachVideoAccessUrl = (video) => {
+  if (!video) {
+    return video;
+  }
+
+  const existingUrl = typeof video.videoURL === 'string' ? video.videoURL.trim() : '';
+  if (existingUrl) {
+    return video;
+  }
+
+  if (!video.videoObjectKey) {
+    return video;
+  }
+
+  const bucket = video.videoBucket || process.env.S3_VIDEO_BUCKET || process.env.S3_BUCKET;
+  const access = generateTemporaryAccessUrl({ key: video.videoObjectKey, bucket });
+  return {
+    ...video,
+    videoURL: access.accessUrl,
+    videoAccessExpiresAt: access.expiresAt,
+    videoAccessExpiresIn: access.expiresIn,
+  };
+};
+
 const createVideo = async (ownerId, payload) => {
   const video = await Video.create({
     title: payload.title,
     description: payload.description,
     videoURL: payload.videoURL,
     videoObjectKey: payload.videoObjectKey,
+    videoBucket: payload.videoBucket,
     duration: payload.duration,
     status: payload.status,
     owner: ownerId,
@@ -128,8 +154,7 @@ const getVideos = async ({ limit, skip }) => {
     .lean();
 
   const total = await Video.countDocuments({ status: 'public' });
-
-  return { videos, total };
+  return { videos: videos.map(attachVideoAccessUrl), total };
 };
 
 const getFollowingFeed = async ({ viewerId, limit, skip }) => {
@@ -163,7 +188,7 @@ const getFollowingFeed = async ({ viewerId, limit, skip }) => {
     ]),
   ]);
 
-  return { videos, total: totalResult[0]?.total || 0 };
+  return { videos: videos.map(attachVideoAccessUrl), total: totalResult[0]?.total || 0 };
 };
 
 const getTrendingFeed = async ({ limit, skip }) => {
@@ -188,7 +213,7 @@ const getTrendingFeed = async ({ limit, skip }) => {
     Video.aggregate([{ $match: { status: 'public' } }, { $count: 'total' }]),
   ]);
 
-  return { videos, total: totalResult[0]?.total || 0 };
+  return { videos: videos.map(attachVideoAccessUrl), total: totalResult[0]?.total || 0 };
 };
 
 const uploadVideoFile = async ({ ownerId, file }) => {
@@ -208,6 +233,7 @@ const uploadVideoFile = async ({ ownerId, file }) => {
       description: '',
       videoURL: '',
       videoObjectKey: uploaded.key,
+      videoBucket: uploaded.bucket,
       duration,
       status: 'public',
       owner: ownerId,
@@ -277,11 +303,13 @@ const getPublicVideoById = async (videoId) => {
     return null;
   }
 
-  return {
+  return attachVideoAccessUrl({
     id: video._id.toString(),
     title: video.title,
     description: video.description,
     videoURL: video.videoURL,
+    videoObjectKey: video.videoObjectKey,
+    videoBucket: video.videoBucket,
     duration: video.duration,
     viewsCount: video.viewsCount,
     owner: {
@@ -290,7 +318,7 @@ const getPublicVideoById = async (videoId) => {
     },
     createdAt: video.createdAt,
     updatedAt: video.updatedAt,
-  };
+  });
 };
 
 const deleteVideo = async (videoId, requesterId, requesterRole) => {

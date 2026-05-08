@@ -11,6 +11,7 @@ export function HomeFeedScreen() {
   const following = useAppStore((state) => state.following);
   const notInterested = useAppStore((state) => state.notInterested);
   const setLoading = useAppStore((state) => state.setLoading);
+  const isLoading = useAppStore((state) => state.isLoading);
   const hasMoreVideos = useAppStore((state) => state.hasMoreVideos);
   const loadMoreVideos = useAppStore((state) => state.loadMoreVideos);
   const [activeTab, setActiveTab] = useState<"for-you" | "following">("for-you");
@@ -23,14 +24,15 @@ export function HomeFeedScreen() {
 
   useEffect(() => {
     setLoading(true);
-    const timer = window.setTimeout(() => {
+    void loadMoreVideos();
+  }, [loadMoreVideos, setLoading]);
+
+  useEffect(() => {
+    if (!isLoading) {
       setLocalLoading(false);
       setLoading(false);
-    }, 900);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [setLoading]);
+    }
+  }, [isLoading, setLoading]);
 
   const feedVideos = useMemo(() => {
     const base = videos.filter((video) => !notInterested[video.id]);

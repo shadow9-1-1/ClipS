@@ -31,6 +31,19 @@ const userIdParamSchema = z.object({
   }),
 });
 
+const usernameParamSchema = z.object({
+  body: z.object({}).default({}),
+  query: z.object({}).default({}),
+  params: z.object({
+    username: z
+      .string()
+      .trim()
+      .min(3, 'Username must be at least 3 characters')
+      .max(30, 'Username cannot exceed 30 characters')
+      .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
+  }),
+});
+
 const notificationChannelSchema = z
   .object({
     followers: z.boolean().optional(),
@@ -58,5 +71,6 @@ const updatePreferencesSchema = z.object({
 module.exports = {
   updateMeSchema,
   userIdParamSchema,
+  usernameParamSchema,
   updatePreferencesSchema,
 };

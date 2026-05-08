@@ -3,38 +3,68 @@
 import { useEffect, useState } from "react";
 import { Camera, Save } from "lucide-react";
 import { toast } from "sonner";
-import { useAppStore, useMyProfile } from "@/lib/store";
+import { useAppStore } from "@/lib/store";
+import { useAuth } from "@/hooks/useAuth";
+import { useApiUser } from "@/hooks/useApiUser";
+import { getApiPrefix } from "@/lib/api";
+import { getBearerAuthHeader } from "@/lib/auth-headers";
+import { buildAvatarFromUsername } from "@/lib/placeholders";
 
 export function EditProfileScreen() {
-  const profile = useMyProfile();
+  const { user: authUser } = useAuth();
+  const { user: apiProfile } = useApiUser(authUser?.id);
   const updateProfile = useAppStore((state) => state.updateProfile);
   const setError = useAppStore((state) => state.setError);
-  const [displayName, setDisplayName] = useState(profile.displayName);
-  const [username, setUsername] = useState(profile.username);
-  const [bio, setBio] = useState(profile.bio);
-  const [avatarPreview, setAvatarPreview] = useState(profile.avatar);
+  const [displayName, setDisplayName] = useState(apiProfile?.displayName || "");
+  const [username, setUsername] = useState(apiProfile?.username || "");
+  const [bio, setBio] = useState(apiProfile?.bio || "");
+  const [avatarPreview, setAvatarPreview] = useState(apiProfile?.avatar || buildAvatarFromUsername("user"));
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    setDisplayName(profile.displayName);
-    setUsername(profile.username);
-    setBio(profile.bio);
-    setAvatarPreview(profile.avatar);
-  }, [profile]);
+    if (!apiProfile) return;
+    setDisplayName(apiProfile.displayName);
+    setUsername(apiProfile.username);
+    setBio(apiProfile.bio);
+    setAvatarPreview(apiProfile.avatar);
+  }, [apiProfile]);
 
-  const submit = () => {
+  const submit = async () => {
+    const auth = getBearerAuthHeader();
+    if (!("Authorization" in auth)) {
+      setError({ title: "Sign in required", message: "Please sign in to update your profile." });
+      return;
+    }
+
     setSaving(true);
-    window.setTimeout(() => {
-      if (Math.random() < 0.1) {
+    try {
+      const res = await fetch(`${getApiPrefix()}/v1/users/updateMe`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...auth,
+        },
+        body: JSON.stringify({
+          username: username.trim() || undefined,
+          bio: bio.trim() || undefined,
+        }),
+      });
+
+      const body = (await res.json().catch(() => ({}))) as { message?: string; data?: { user?: any } };
+      if (!res.ok) {
+        setError({ title: "Profile update failed", message: body?.message || "Update failed." });
         setSaving(false);
-        setError({ title: "Profile update failed", message: "The mock save request hit a simulated network error." });
         return;
       }
 
       updateProfile({ displayName, username, bio, avatar: avatarPreview });
-      setSaving(false);
       toast.success("Profile updated");
-    }, 850);
+    } catch {
+      setError({ title: "Profile update failed", message: "Network error. Try again." });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
