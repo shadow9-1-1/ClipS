@@ -82,7 +82,7 @@ export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) 
 
       <div className="pointer-events-none absolute inset-0 z-20 flex items-end justify-between gap-4 p-4 sm:p-6 md:p-8">
         <div className="pointer-events-auto max-w-2xl space-y-3 pb-2 pr-16 md:pr-0">
-          <Link href={`/profile/${creatorProfile.username}`} className="inline-flex items-center gap-3 text-sm text-white/80" aria-label={`Open ${creatorProfile.displayName}'s profile`}>
+          <Link href={`/profile/${video.userId}`} className="inline-flex items-center gap-3 text-sm text-white/80" aria-label={`Open ${creatorProfile.displayName}'s profile`}>
             <img src={creatorProfile.avatar} alt={creatorProfile.displayName} className="h-11 w-11 rounded-2xl border border-white/10 object-cover" />
             <div>
               <div className="flex items-center gap-2 text-white">

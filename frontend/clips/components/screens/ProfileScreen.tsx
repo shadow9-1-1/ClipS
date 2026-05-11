@@ -24,12 +24,20 @@ type ProfileScreenProps = {
 export function ProfileScreen({ username }: ProfileScreenProps) {
   const router = useRouter();
   const { user: authUser } = useAuth();
-  const normalizedUsername = username?.trim().replace(/^@/, "").toLowerCase();
-  const { user: apiUserByUsername } = useApiUserByUsername(normalizedUsername);
+  const profileRef = username?.trim().replace(/^@/, "");
+  const normalizedUsername = profileRef?.toLowerCase();
+  const isObjectIdRef = Boolean(profileRef && /^[a-fA-F0-9]{24}$/.test(profileRef));
+  const { user: apiUserByUsername } = useApiUserByUsername(isObjectIdRef ? undefined : normalizedUsername);
+  const { user: apiUserById } = useApiUser(isObjectIdRef ? profileRef : undefined);
   const { user: apiCurrentUser } = useApiUser(authUser?.id);
-  const ownProfile = !normalizedUsername || normalizedUsername === apiCurrentUser?.username?.toLowerCase();
-  const profile = ownProfile ? apiCurrentUser : apiUserByUsername;
-  const profileMissing = !ownProfile && !profile;
+  const ownProfile =
+    !profileRef ||
+    normalizedUsername === apiCurrentUser?.username?.toLowerCase() ||
+    profileRef === apiCurrentUser?.id;
+  const profile = ownProfile
+    ? apiCurrentUser
+    : (isObjectIdRef ? apiUserById : apiUserByUsername);
+  const profileMissing = Boolean(profileRef) && !ownProfile && !profile;
   const likedMap = useAppStore((state) => state.liked);
   const savedMap = useAppStore((state) => state.saved);
   const followingMap = useAppStore((state) => state.following);

@@ -8,9 +8,10 @@ type PageProps = {
 };
 
 export function generateMetadata({ params }: PageProps): Metadata {
+  const profileRef = params.username?.trim().replace(/^@/, "");
   return {
-    title: `@${params.username} | ClipS`,
-    description: `View @${params.username}'s ClipS profile and videos.`,
+    title: `${profileRef} | ClipS`,
+    description: `View ${profileRef}'s ClipS profile and videos.`,
   };
 }
 

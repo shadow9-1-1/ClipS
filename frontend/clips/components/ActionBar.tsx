@@ -24,7 +24,7 @@ export function ActionBar({ video, creator, canFollow, liked, following, onLike,
   return (
     <div className="pointer-events-auto flex h-full flex-col items-center justify-end gap-4 pb-3">
       <Link
-        href={`/profile/${encodeURIComponent(creator.username)}`}
+        href={`/profile/${encodeURIComponent(video.userId)}`}
         className="group flex flex-col items-center gap-2 text-center"
         aria-label={`Open ${creator.displayName}'s profile`}
       >
