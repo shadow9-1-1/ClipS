@@ -24,9 +24,14 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
   const [progress, setProgress] = useState(0);
   const [burstCount, setBurstCount] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [runtimeOrientation, setRuntimeOrientation] = useState<Video["orientation"]>(video.orientation);
   const wasActiveRef = useRef(false);
   const shouldRestartRef = useRef(false);
   const muteHandledByPointerRef = useRef(false);
+
+  useEffect(() => {
+    setRuntimeOrientation(video.orientation);
+  }, [video.id, video.orientation]);
 
   const applyMutedState = (element: HTMLVideoElement, muted: boolean) => {
     element.defaultMuted = muted;
@@ -204,7 +209,7 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
     togglePlay();
   };
 
-  const objectFit = video.orientation === "landscape" ? "object-contain" : "object-cover";
+  const objectFit = "object-contain";
 
   return (
     <div
@@ -221,6 +226,12 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
         loop
         preload="metadata"
         onLoadedData={(event) => {
+          const element = event.currentTarget;
+          if (element.videoWidth > 0 && element.videoHeight > 0) {
+            setRuntimeOrientation(
+              element.videoWidth >= element.videoHeight ? "landscape" : "portrait"
+            );
+          }
           applyMutedState(event.currentTarget, globallyMuted);
           if (active) {
             tryAutoPlay();
@@ -290,7 +301,7 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
               {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
             </span>
           </button>
-          {video.orientation === "landscape" ? (
+          {runtimeOrientation === "landscape" ? (
             <button
               type="button"
               onPointerDown={(event) => event.stopPropagation()}
