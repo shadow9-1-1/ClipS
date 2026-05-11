@@ -6,6 +6,9 @@ import { Pause, Play, RotateCcw, Volume2, VolumeX, Maximize2, Heart } from "luci
 import type { Video } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+let globallyPlayingVideo: HTMLVideoElement | null = null;
+let globallyMuted = true;
+
 type VideoPlayerProps = {
   video: Video;
   active: boolean;
@@ -16,13 +19,25 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const lastTapRef = useRef<{ time: number; x: number; y: number }>({ time: 0, x: 0, y: 0 });
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(globallyMuted);
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [burstCount, setBurstCount] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const wasActiveRef = useRef(false);
   const shouldRestartRef = useRef(false);
+  const muteHandledByPointerRef = useRef(false);
+
+  const applyMutedState = (element: HTMLVideoElement, muted: boolean) => {
+    element.defaultMuted = muted;
+    element.muted = muted;
+    element.volume = muted ? 0 : 1;
+    if (muted) {
+      element.setAttribute("muted", "");
+    } else {
+      element.removeAttribute("muted");
+    }
+  };
 
   const resetToStart = (element: HTMLVideoElement) => {
     try {
@@ -46,7 +61,7 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
       resetToStart(element);
       shouldRestartRef.current = false;
     }
-    element.muted = isMuted;
+    applyMutedState(element, globallyMuted);
     void element.play().catch(() => {
       // Some browsers reject early autoplay calls before media is ready.
     });
@@ -57,6 +72,7 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
     if (!element) return;
 
     if (active) {
+      setIsMuted(globallyMuted);
       tryAutoPlay();
     } else {
       if (wasActiveRef.current) {
@@ -64,6 +80,9 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
         resetToStart(element);
       }
       element.pause();
+      if (globallyPlayingVideo === element) {
+        globallyPlayingVideo = null;
+      }
     }
     wasActiveRef.current = active;
   }, [active, video.src]);
@@ -71,9 +90,15 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
   useEffect(() => {
     const element = videoRef.current;
     if (!element) return;
-    element.muted = isMuted;
-    element.volume = isMuted ? 0 : 1;
-  }, [isMuted]);
+    globallyMuted = isMuted;
+    applyMutedState(element, isMuted);
+    // If user unmutes the active video, retry play so audio starts immediately.
+    if (!isMuted && active && element.paused) {
+      void element.play().catch(() => {
+        // Browser may still require another direct gesture.
+      });
+    }
+  }, [active, isMuted]);
 
   useEffect(() => {
     const syncFullscreen = () => {
@@ -136,6 +161,27 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
     }
   };
 
+  const toggleMuted = async () => {
+    const vid = videoRef.current;
+    if (!vid) return;
+
+    const nextMuted = !isMuted;
+    globallyMuted = nextMuted;
+    setIsMuted(nextMuted);
+
+    // Apply immediately on the element so user gesture takes effect now.
+    applyMutedState(vid, nextMuted);
+
+    if (!nextMuted) {
+      try {
+        await vid.play();
+        setIsPlaying(true);
+      } catch {
+        // Some browsers still block until another explicit play tap.
+      }
+    }
+  };
+
   const onPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
     const now = Date.now();
     const distance = Math.hypot(event.clientX - lastTapRef.current.x, event.clientY - lastTapRef.current.y);
@@ -172,15 +218,16 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
         src={video.src}
         poster={video.poster}
         playsInline
-        muted={isMuted}
         loop
         preload="metadata"
-        onLoadedData={() => {
+        onLoadedData={(event) => {
+          applyMutedState(event.currentTarget, globallyMuted);
           if (active) {
             tryAutoPlay();
           }
         }}
-        onCanPlay={() => {
+        onCanPlay={(event) => {
+          applyMutedState(event.currentTarget, globallyMuted);
           if (active) {
             tryAutoPlay();
           }
@@ -190,8 +237,24 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
           if (!target.duration) return;
           setProgress(target.currentTime / target.duration);
         }}
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
+        onPlay={(event) => {
+          const current = event.currentTarget;
+          if (globallyPlayingVideo && globallyPlayingVideo !== current) {
+            try {
+              globallyPlayingVideo.pause();
+            } catch {
+              // ignore pause failures
+            }
+          }
+          globallyPlayingVideo = current;
+          setIsPlaying(true);
+        }}
+        onPause={(event) => {
+          if (globallyPlayingVideo === event.currentTarget) {
+            globallyPlayingVideo = null;
+          }
+          setIsPlaying(false);
+        }}
       />
 
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-black/25" />
@@ -204,21 +267,21 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onPointerDown={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              muteHandledByPointerRef.current = true;
+              void toggleMuted();
+            }}
+            onPointerUp={(event) => event.stopPropagation()}
             onClick={async (event) => {
               event.preventDefault();
-              const vid = videoRef.current;
-              if (!vid) return;
-              const newMuted = !vid.muted;
-              try {
-                vid.muted = newMuted;
-                vid.volume = newMuted ? 0 : 1;
-                if (!newMuted) {
-                  await vid.play();
-                }
-              } catch {
-                // ignore
+              event.stopPropagation();
+              if (muteHandledByPointerRef.current) {
+                muteHandledByPointerRef.current = false;
+                return;
               }
-              setIsMuted(newMuted);
+              await toggleMuted();
             }}
             className="glass pointer-events-auto inline-flex h-11 w-11 items-center justify-center rounded-full text-foreground transition hover:scale-105"
             aria-label={isMuted ? "Unmute video" : "Mute video"}
@@ -230,8 +293,10 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
           {video.orientation === "landscape" ? (
             <button
               type="button"
+              onPointerDown={(event) => event.stopPropagation()}
+              onPointerUp={(event) => event.stopPropagation()}
               onClick={async (event) => {
-                event.preventDefault();
+                event.stopPropagation();
                 try {
                   const vid = videoRef.current;
                   if (vid && (vid as any).requestFullscreen) {

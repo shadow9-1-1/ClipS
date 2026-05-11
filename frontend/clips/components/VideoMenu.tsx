@@ -101,7 +101,7 @@ export function VideoMenu({ video, onOpenShare, onOpenReport }: VideoMenuProps) 
               </div>
             </DropdownMenuLabel>
             <div className="px-3 py-2">
-              <StarRating value={rating} onChange={(value) => rateVideo(video.id, value)} />
+              <StarRating value={rating} onChange={(value) => { void rateVideo(video.id, value); }} />
             </div>
           </>
         ) : null}

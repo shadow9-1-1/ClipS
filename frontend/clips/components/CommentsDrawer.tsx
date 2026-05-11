@@ -33,6 +33,22 @@ export function CommentsDrawer({ open, onOpenChange, videoId }: CommentsDrawerPr
   const visibleComments = useMemo(() => comments, [comments]);
   const canPost = draft.trim().length > 0;
 
+  const loadReviews = async () => {
+    const res = await fetch(
+      `${getApiPrefix()}/v1/videos/${videoId}/reviews`,
+      { cache: "no-store" }
+    );
+    if (!res.ok) return;
+    const json = (await res.json()) as { data?: { reviews?: any[] } };
+    const list = (json?.data?.reviews ?? []).map((review) => ({
+      id: String(review.id || review._id || ""),
+      username: review.username || "User",
+      comment: review.comment || "",
+      rating: Number(review.rating || 0),
+    }));
+    setComments(list);
+  };
+
   useEffect(() => {
     let cancelled = false;
     if (!open) return;
@@ -40,19 +56,7 @@ export function CommentsDrawer({ open, onOpenChange, videoId }: CommentsDrawerPr
     const load = async () => {
       setLoading(true);
       try {
-        const res = await fetch(
-          `${getApiPrefix()}/v1/videos/${videoId}/reviews`,
-          { cache: "no-store" }
-        );
-        if (!res.ok) return;
-        const json = (await res.json()) as { data?: { reviews?: any[] } };
-        const list = (json?.data?.reviews ?? []).map((review) => ({
-          id: String(review.id || review._id || ""),
-          username: review.username || "User",
-          comment: review.comment || "",
-          rating: Number(review.rating || 0),
-        }));
-        if (!cancelled) setComments(list);
+        await loadReviews();
       } catch {
         // ignore
       } finally {
@@ -102,8 +106,7 @@ export function CommentsDrawer({ open, onOpenChange, videoId }: CommentsDrawerPr
       setDraft("");
       setRating(0);
       toast.success("Comment posted");
-      onOpenChange(false);
-      onOpenChange(true);
+      await loadReviews();
     } catch {
       toast.error("Network error. Try again.");
     }

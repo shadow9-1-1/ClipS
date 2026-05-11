@@ -8,6 +8,7 @@ export type ApiUser = {
   email?: string;
   bio?: string | null;
   avatarKey?: string | null;
+  avatarURL?: string | null;
 };
 
 export type ApiVideo = {
@@ -28,12 +29,17 @@ export type ApiVideo = {
 export function mapApiUserToUi(user: ApiUser): User {
   const id = String(user.id || user._id || "");
   const username = (user.username || "user").toLowerCase();
+  const avatarFromApi = typeof user.avatarURL === "string" && user.avatarURL.trim()
+    ? user.avatarURL.trim()
+    : typeof user.avatarKey === "string" && /^https?:\/\//i.test(user.avatarKey)
+      ? user.avatarKey.trim()
+      : "";
 
   return {
     id,
     username,
     displayName: username,
-    avatar: buildAvatarFromUsername(username),
+    avatar: avatarFromApi || buildAvatarFromUsername(username),
     bio: user.bio || "",
     verified: false,
     followers: 0,

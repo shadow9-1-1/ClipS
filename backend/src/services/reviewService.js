@@ -11,22 +11,30 @@ const createVideoReview = async ({ videoId, userId, rating, comment }) => {
     throw err;
   }
 
-  const existingReview = await Review.findOne({ user: userId, video: videoId }).lean();
+  const normalizedComment = typeof comment === 'string' ? comment.trim() : '';
+  const existingReview = await Review.findOne({ user: userId, video: videoId });
+  const hadComment = Boolean(existingReview?.comment);
+
+  let review;
+  let created = false;
 
   if (existingReview) {
-    const err = new Error('You have already reviewed this video');
-    err.statusCode = 409;
-    throw err;
+    existingReview.rating = rating;
+    if (typeof comment !== 'undefined') {
+      existingReview.comment = normalizedComment;
+    }
+    review = await existingReview.save();
+  } else {
+    review = await Review.create({
+      rating,
+      comment: normalizedComment,
+      user: userId,
+      video: videoId,
+    });
+    created = true;
   }
 
-  const review = await Review.create({
-    rating,
-    comment: comment || '',
-    user: userId,
-    video: videoId,
-  });
-
-  if (review.comment) {
+  if (!hadComment && review.comment) {
     await sendNewCommentNotification({
       recipientId: video.owner,
       commenterId: userId,
@@ -36,13 +44,16 @@ const createVideoReview = async ({ videoId, userId, rating, comment }) => {
   }
 
   return {
-    id: review._id.toString(),
-    rating: review.rating,
-    comment: review.comment,
-    user: review.user.toString(),
-    video: review.video.toString(),
-    createdAt: review.createdAt,
-    updatedAt: review.updatedAt,
+    created,
+    review: {
+      id: review._id.toString(),
+      rating: review.rating,
+      comment: review.comment,
+      user: review.user.toString(),
+      video: review.video.toString(),
+      createdAt: review.createdAt,
+      updatedAt: review.updatedAt,
+    },
   };
 };
 

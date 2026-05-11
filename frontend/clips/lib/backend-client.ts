@@ -23,7 +23,8 @@ async function request<T>(
 
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as { message?: string };
-    const message = body?.message || `Request failed (${res.status})`;
+    const baseMessage = body?.message || "Request failed";
+    const message = `${baseMessage} (${res.status})`;
     throw new Error(message);
   }
 

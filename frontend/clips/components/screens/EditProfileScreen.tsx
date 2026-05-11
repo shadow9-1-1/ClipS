@@ -19,6 +19,7 @@ export function EditProfileScreen() {
   const [username, setUsername] = useState(apiProfile?.username || "");
   const [bio, setBio] = useState(apiProfile?.bio || "");
   const [avatarPreview, setAvatarPreview] = useState(apiProfile?.avatar || buildAvatarFromUsername("user"));
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -27,7 +28,24 @@ export function EditProfileScreen() {
     setUsername(apiProfile.username);
     setBio(apiProfile.bio);
     setAvatarPreview(apiProfile.avatar);
+    setAvatarFile(null);
   }, [apiProfile]);
+
+  const fileToBase64 = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const raw = String(reader.result || "");
+        const base64 = raw.includes(",") ? raw.split(",")[1] : raw;
+        if (!base64) {
+          reject(new Error("Could not read image file."));
+          return;
+        }
+        resolve(base64);
+      };
+      reader.onerror = () => reject(new Error("Could not read image file."));
+      reader.readAsDataURL(file);
+    });
 
   const submit = async () => {
     const auth = getBearerAuthHeader();
@@ -38,6 +56,46 @@ export function EditProfileScreen() {
 
     setSaving(true);
     try {
+      let nextAvatarKey: string | undefined;
+      let nextAvatarPreview = avatarPreview;
+      if (avatarFile && authUser?.id) {
+        const base64Data = await fileToBase64(avatarFile);
+        const uploadRes = await fetch(`${getApiPrefix()}/v1/storage/test-upload`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            ...auth,
+          },
+          body: JSON.stringify({
+            filename: avatarFile.name || "avatar.jpg",
+            base64Data,
+            contentType: avatarFile.type || "image/jpeg",
+            bucket: "avatars",
+            keyPrefix: `avatars/${authUser.id}`,
+          }),
+        });
+
+        const uploadBody = (await uploadRes.json().catch(() => ({}))) as {
+          message?: string;
+          data?: { key?: string; accessUrl?: string };
+        };
+
+        if (!uploadRes.ok || !uploadBody?.data?.key) {
+          setError({
+            title: "Avatar upload failed",
+            message: uploadBody?.message || "Could not upload avatar image.",
+          });
+          setSaving(false);
+          return;
+        }
+
+        nextAvatarKey = uploadBody.data.key;
+        if (uploadBody.data.accessUrl) {
+          nextAvatarPreview = uploadBody.data.accessUrl;
+        }
+      }
+
       const res = await fetch(`${getApiPrefix()}/v1/users/updateMe`, {
         method: "PATCH",
         credentials: "include",
@@ -48,6 +106,7 @@ export function EditProfileScreen() {
         body: JSON.stringify({
           username: username.trim() || undefined,
           bio: bio.trim() || undefined,
+          avatarKey: nextAvatarKey,
         }),
       });
 
@@ -58,7 +117,9 @@ export function EditProfileScreen() {
         return;
       }
 
-      updateProfile({ displayName, username, bio, avatar: avatarPreview });
+      updateProfile({ displayName, username, bio, avatar: nextAvatarPreview });
+      setAvatarPreview(nextAvatarPreview);
+      setAvatarFile(null);
       toast.success("Profile updated");
     } catch {
       setError({ title: "Profile update failed", message: "Network error. Try again." });
@@ -96,6 +157,7 @@ export function EditProfileScreen() {
                 if (!nextFile) return;
                 const nextUrl = URL.createObjectURL(nextFile);
                 setAvatarPreview(nextUrl);
+                setAvatarFile(nextFile);
               }}
             />
           </label>

@@ -63,7 +63,7 @@ export type AppState = {
   toggleLike: (videoId: string) => void;
   setLiked: (videoId: string, liked: boolean) => void;
   toggleSave: (videoId: string) => void;
-  rateVideo: (videoId: string, rating: number) => void;
+  rateVideo: (videoId: string, rating: number) => Promise<void>;
   toggleFollow: (userId: string) => void;
   markNotInterested: (videoId: string) => void;
   reportVideo: (videoId: string, reason: string, details?: string) => void;
@@ -84,6 +84,8 @@ export type AppState = {
 
 const FEED_PAGE_SIZE = 6;
 const LOCAL_CURRENT_USER_ID = "me";
+let feedRetryAt = 0;
+let interactionsEndpointsAvailable: boolean | null = null;
 
 function clampRating(value: number) {
   return Math.min(5, Math.max(1, Math.round(value)));
@@ -222,27 +224,66 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     })();
   },
-  rateVideo: (videoId, ratingValue) => {
+  rateVideo: async (videoId, ratingValue) => {
     const rating = clampRating(ratingValue);
-    const { ratings, videos } = get();
+    const { ratings, videos, allVideos } = get();
     const previousRating = ratings[videoId];
+    const auth = getBearerAuthHeader();
+    if (!("Authorization" in auth)) {
+      set({ error: { title: "Sign in required", message: "Please sign in to rate videos." } });
+      return;
+    }
 
+    const applyRatingToVideo = (video: Video) => {
+      if (video.id !== videoId) return video;
+      const totalBefore = video.rating * video.ratingCount;
+      const totalAfter = previousRating
+        ? totalBefore - previousRating + rating
+        : totalBefore + rating;
+      const countAfter = previousRating ? video.ratingCount : video.ratingCount + 1;
+      return {
+        ...video,
+        rating: totalAfter / countAfter,
+        ratingCount: countAfter,
+      };
+    };
+
+    const prev = {
+      ratings: { ...ratings },
+      videos: [...videos],
+      allVideos: [...allVideos],
+    };
     set({
       ratings: { ...ratings, [videoId]: rating },
-      videos: videos.map((video) => {
-        if (video.id !== videoId) return video;
-        const totalBefore = video.rating * video.ratingCount;
-        const totalAfter = previousRating
-          ? totalBefore - previousRating + rating
-          : totalBefore + rating;
-        const countAfter = previousRating ? video.ratingCount : video.ratingCount + 1;
-        return {
-          ...video,
-          rating: totalAfter / countAfter,
-          ratingCount: countAfter,
-        };
-      }),
+      videos: videos.map(applyRatingToVideo),
+      allVideos: allVideos.map(applyRatingToVideo),
     });
+
+    try {
+      const res = await fetch(`${getApiPrefix()}/v1/videos/${videoId}/reviews`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...auth,
+        },
+        body: JSON.stringify({ rating }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(body?.message || "Could not save rating.");
+      }
+    } catch (err) {
+      set({
+        ratings: prev.ratings,
+        videos: prev.videos,
+        allVideos: prev.allVideos,
+        error: {
+          title: "Rating failed",
+          message: err instanceof Error ? err.message : "Could not save rating. Please try again.",
+        },
+      });
+    }
   },
   toggleFollow: async (userId) => {
     const { following } = get();
@@ -438,6 +479,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
   loadVideoInteractionsFromServer: async () => {
+    if (interactionsEndpointsAvailable === false) return;
     const auth = getBearerAuthHeader();
     if (!("Authorization" in auth)) return;
 
@@ -457,7 +499,12 @@ export const useAppStore = create<AppState>((set, get) => ({
         }),
       ]);
 
+      if (likedRes.status === 404 || savedRes.status === 404) {
+        interactionsEndpointsAvailable = false;
+        return;
+      }
       if (!likedRes.ok || !savedRes.ok) return;
+      interactionsEndpointsAvailable = true;
 
       const likedBody = (await likedRes.json().catch(() => ({}))) as {
         data?: { videoIds?: string[] };
@@ -494,6 +541,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   loadMoreVideos: async () => {
     const { hasMoreVideos, isLoading, videos, feedMode } = get();
+    if (Date.now() < feedRetryAt) return;
     if (!hasMoreVideos || isLoading) return;
 
     set({ isLoading: true });
@@ -535,7 +583,15 @@ export const useAppStore = create<AppState>((set, get) => ({
         hasMoreVideos: more,
       });
     } catch (err) {
-      set({ error: { title: "Feed error", message: "Could not load videos." } });
+      const message = err instanceof Error ? err.message : "";
+      const isRateLimited = /429|too many/i.test(message);
+      if (isRateLimited) {
+        feedRetryAt = Date.now() + 5000;
+        // Avoid noisy popups; this is transient and auto-recovers.
+        set({ error: null });
+      } else {
+        set({ error: { title: "Feed error", message: "Could not load videos." } });
+      }
     } finally {
       set({ isLoading: false });
     }

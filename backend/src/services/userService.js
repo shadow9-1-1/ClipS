@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const { generateTemporaryAccessUrl } = require('./storageService');
 
 const defaultNotificationChannel = {
   followers: true,
@@ -36,6 +37,19 @@ const normalizeNotificationPreferences = (value) => {
   };
 };
 
+const resolveAvatarUrl = (avatarKey) => {
+  const raw = typeof avatarKey === 'string' ? avatarKey.trim() : '';
+  if (!raw) return '';
+  if (/^https?:\/\//i.test(raw)) return raw;
+  try {
+    const bucket = process.env.S3_AVATAR_BUCKET || process.env.S3_BUCKET;
+    const data = generateTemporaryAccessUrl({ bucket, key: raw });
+    return data?.accessUrl || '';
+  } catch {
+    return '';
+  }
+};
+
 const mapUserResponse = (user) => ({
   id: user._id.toString(),
   username: user.username,
@@ -43,6 +57,7 @@ const mapUserResponse = (user) => ({
   role: user.role,
   bio: user.bio,
   avatarKey: user.avatarKey,
+  avatarURL: resolveAvatarUrl(user.avatarKey),
   active: user.active,
   accountStatus: user.accountStatus,
   notificationPreferences: user.notificationPreferences,
@@ -119,6 +134,7 @@ const getPublicUserProfile = async (userId) => {
     username: user.username,
     bio: user.bio,
     avatarKey: user.avatarKey,
+    avatarURL: resolveAvatarUrl(user.avatarKey),
     createdAt: user.createdAt,
   };
 };
@@ -146,6 +162,7 @@ const getPublicUserProfileByUsername = async (username) => {
     username: user.username,
     bio: user.bio,
     avatarKey: user.avatarKey,
+    avatarURL: resolveAvatarUrl(user.avatarKey),
     createdAt: user.createdAt,
   };
 };
