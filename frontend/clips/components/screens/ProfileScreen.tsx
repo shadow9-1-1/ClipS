@@ -440,7 +440,9 @@ function Grid({
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-4 text-white">
               <p className="line-clamp-2 text-sm font-medium">{video.caption}</p>
-              <p className="mt-1 text-xs text-white/75">{video.likes.toLocaleString()} likes</p>
+              <p className="mt-1 text-xs text-white/75">
+                {video.likes.toLocaleString()} likes · {video.rating.toFixed(1)} avg rating
+              </p>
             </div>
           </button>
           {canManage ? (

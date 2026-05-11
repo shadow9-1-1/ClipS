@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { Download, EllipsisVertical, Heart, Share2, Sparkles, ThumbsDown, Flag } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Download, EllipsisVertical, Heart, Share2, Sparkles, ThumbsDown, Flag, Bookmark } from "lucide-react";
 import type { Video } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { StarRating } from "@/components/StarRating";
+import { useAuth } from "@/hooks/useAuth";
+import { getApiPrefix } from "@/lib/api";
+import { getBearerAuthHeader } from "@/lib/auth-headers";
 
 type VideoMenuProps = {
   video: Video;
@@ -16,6 +19,8 @@ type VideoMenuProps = {
 
 export function VideoMenu({ video, onOpenShare, onOpenReport }: VideoMenuProps) {
   const [showRating, setShowRating] = useState(false);
+  const [resolvedRating, setResolvedRating] = useState(0);
+  const { user: authUser } = useAuth();
   const settings = useAppStore((state) => state.settings);
   const updateSettings = useAppStore((state) => state.updateSettings);
   const saved = useAppStore((state) => Boolean(state.saved[video.id]));
@@ -23,6 +28,49 @@ export function VideoMenu({ video, onOpenShare, onOpenReport }: VideoMenuProps) 
   const rating = useAppStore((state) => state.ratings[video.id] ?? 0);
   const rateVideo = useAppStore((state) => state.rateVideo);
   const markNotInterested = useAppStore((state) => state.markNotInterested);
+
+  useEffect(() => {
+    if (rating > 0) {
+      setResolvedRating(rating);
+    }
+  }, [rating, video.id]);
+
+  useEffect(() => {
+    if (!showRating || rating > 0 || !authUser?.id) return;
+    let cancelled = false;
+
+    const loadPreviousRating = async () => {
+      try {
+        const auth = getBearerAuthHeader();
+        const res = await fetch(`${getApiPrefix()}/v1/videos/${video.id}/reviews`, {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+          headers: {
+            ...auth,
+          },
+        });
+        if (!res.ok) return;
+        const body = (await res.json().catch(() => ({}))) as {
+          data?: { reviews?: Array<{ userId?: string; user?: string; rating?: number }> };
+        };
+        const mine = (body?.data?.reviews ?? []).find(
+          (review) => String(review?.userId || review?.user || "") === authUser.id
+        );
+        const previous = Number(mine?.rating || 0);
+        if (!cancelled && Number.isFinite(previous) && previous > 0) {
+          setResolvedRating(previous);
+        }
+      } catch {
+        // Keep current local rating value on fetch failure.
+      }
+    };
+
+    void loadPreviousRating();
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser?.id, rating, showRating, video.id]);
 
   const downloadVideo = async () => {
     const link = document.createElement("a");
@@ -63,7 +111,7 @@ export function VideoMenu({ video, onOpenShare, onOpenReport }: VideoMenuProps) 
             )}
           onClick={() => toggleSave(video.id)}
         >
-            <Heart className={cn("h-4 w-4", saved && "fill-emerald-400 text-emerald-400")} />
+            <Bookmark className={cn("h-4 w-4", saved && "fill-emerald-400 text-emerald-400")} />
           {saved ? "Saved" : "Save"}
         </DropdownMenuItem>
         <DropdownMenuItem
@@ -96,12 +144,18 @@ export function VideoMenu({ video, onOpenShare, onOpenReport }: VideoMenuProps) 
               <div className="space-y-1">
                 <p>Rate this clip</p>
                 <p className="text-xs font-normal normal-case tracking-normal text-slate-400">
-                  Current {rating || video.rating.toFixed(1)} · Avg {video.rating.toFixed(1)}
+                  Current {(resolvedRating || rating || 0).toFixed(1)} · Avg {video.rating.toFixed(1)}
                 </p>
               </div>
             </DropdownMenuLabel>
             <div className="px-3 py-2">
-              <StarRating value={rating} onChange={(value) => { void rateVideo(video.id, value); }} />
+              <StarRating
+                value={resolvedRating || rating}
+                onChange={(value) => {
+                  setResolvedRating(value);
+                  void rateVideo(video.id, value);
+                }}
+              />
             </div>
           </>
         ) : null}

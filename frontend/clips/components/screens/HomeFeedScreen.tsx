@@ -13,6 +13,7 @@ export function HomeFeedScreen() {
   const notInterested = useAppStore((state) => state.notInterested);
   const feedMode = useAppStore((state) => state.feedMode);
   const setFeedMode = useAppStore((state) => state.setFeedMode);
+  const autoScrollEnabled = useAppStore((state) => state.settings.autoScroll);
   const isLoading = useAppStore((state) => state.isLoading);
   const hasMoreVideos = useAppStore((state) => state.hasMoreVideos);
   const loadMoreVideos = useAppStore((state) => state.loadMoreVideos);
@@ -26,6 +27,7 @@ export function HomeFeedScreen() {
   const loaderRef = useRef<HTMLDivElement | null>(null);
   const fetchTimerRef = useRef<number | null>(null);
   const scrollIdleTimerRef = useRef<number | null>(null);
+  const autoScrollTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     // Always return to default home feed when landing on Home.
@@ -138,6 +140,32 @@ export function HomeFeedScreen() {
       }
     };
   }, [hasMoreVideos, isFetchingNextPage, loadMoreVideos]);
+
+  useEffect(() => {
+    if (autoScrollTimerRef.current) {
+      window.clearTimeout(autoScrollTimerRef.current);
+      autoScrollTimerRef.current = null;
+    }
+    if (!autoScrollEnabled) return;
+    if (!isScrollSettled) return;
+    if (feedVideos.length < 2) return;
+    if (activeIndex >= feedVideos.length - 1) return;
+
+    autoScrollTimerRef.current = window.setTimeout(() => {
+      if (document.hidden) return;
+      const nextIndex = activeIndex + 1;
+      const nextNode = itemRefs.current[nextIndex];
+      if (!nextNode) return;
+      nextNode.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 4000);
+
+    return () => {
+      if (autoScrollTimerRef.current) {
+        window.clearTimeout(autoScrollTimerRef.current);
+        autoScrollTimerRef.current = null;
+      }
+    };
+  }, [activeIndex, autoScrollEnabled, feedVideos.length, isScrollSettled]);
 
   if (isLoading && feedVideos.length === 0) {
     return (

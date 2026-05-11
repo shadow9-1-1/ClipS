@@ -273,6 +273,22 @@ export const useAppStore = create<AppState>((set, get) => ({
         const body = (await res.json().catch(() => ({}))) as { message?: string };
         throw new Error(body?.message || "Could not save rating.");
       }
+      const body = (await res.json().catch(() => ({}))) as {
+        data?: { averageRating?: number; ratingCount?: number };
+      };
+      const averageRating = Number(body?.data?.averageRating);
+      const ratingCount = Number(body?.data?.ratingCount);
+      if (Number.isFinite(averageRating) && Number.isFinite(ratingCount) && ratingCount >= 0) {
+        const applyServerStats = (video: Video) =>
+          video.id === videoId
+            ? { ...video, rating: averageRating, ratingCount }
+            : video;
+        const current = get();
+        set({
+          videos: current.videos.map(applyServerStats),
+          allVideos: current.allVideos.map(applyServerStats),
+        });
+      }
     } catch (err) {
       set({
         ratings: prev.ratings,

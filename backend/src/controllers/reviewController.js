@@ -13,6 +13,8 @@ const createReview = async (req, res) => {
     message: result.created ? 'Review created successfully' : 'Review updated successfully',
     data: {
       review: result.review,
+      averageRating: result.stats.averageRating,
+      ratingCount: result.stats.ratingCount,
     },
   });
 };

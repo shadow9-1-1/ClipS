@@ -2,6 +2,26 @@ const Review = require('../models/Review');
 const Video = require('../models/Video');
 const { sendNewCommentNotification } = require('./notificationService');
 
+const getVideoRatingStats = async (videoId) => {
+  const stats = await Review.aggregate([
+    { $match: { video: videoId } },
+    {
+      $group: {
+        _id: '$video',
+        avgRating: { $avg: '$rating' },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const avg = Number(stats[0]?.avgRating || 0);
+  const count = Number(stats[0]?.count || 0);
+  return {
+    averageRating: Number.isFinite(avg) ? avg : 0,
+    ratingCount: Number.isFinite(count) ? count : 0,
+  };
+};
+
 const createVideoReview = async ({ videoId, userId, rating, comment }) => {
   const video = await Video.findById(videoId).select('_id owner title');
 
@@ -25,13 +45,28 @@ const createVideoReview = async ({ videoId, userId, rating, comment }) => {
     }
     review = await existingReview.save();
   } else {
-    review = await Review.create({
-      rating,
-      comment: normalizedComment,
-      user: userId,
-      video: videoId,
-    });
-    created = true;
+    try {
+      review = await Review.create({
+        rating,
+        comment: normalizedComment,
+        user: userId,
+        video: videoId,
+      });
+      created = true;
+    } catch (err) {
+      // Handle race condition on unique (user, video) index.
+      if (err?.code === 11000) {
+        const alreadyCreated = await Review.findOne({ user: userId, video: videoId });
+        if (!alreadyCreated) throw err;
+        alreadyCreated.rating = rating;
+        if (typeof comment !== 'undefined') {
+          alreadyCreated.comment = normalizedComment;
+        }
+        review = await alreadyCreated.save();
+      } else {
+        throw err;
+      }
+    }
   }
 
   if (!hadComment && review.comment) {
@@ -45,6 +80,7 @@ const createVideoReview = async ({ videoId, userId, rating, comment }) => {
 
   return {
     created,
+    stats: await getVideoRatingStats(video._id),
     review: {
       id: review._id.toString(),
       rating: review.rating,
