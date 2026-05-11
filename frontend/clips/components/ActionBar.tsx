@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { BadgeCheck, MessageSquare, Plus, Heart } from "lucide-react";
-import type { User, Video } from "@/data/mock";
+import type { User, Video } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { VideoMenu } from "@/components/VideoMenu";
 
 type ActionBarProps = {
   video: Video;
   creator: User;
+  canFollow: boolean;
   liked: boolean;
   following: boolean;
   onLike: () => void;
@@ -19,7 +20,7 @@ type ActionBarProps = {
   onOpenReport: () => void;
 };
 
-export function ActionBar({ video, creator, liked, following, onLike, onComments, onToggleFollow, onOpenShare, onOpenReport }: ActionBarProps) {
+export function ActionBar({ video, creator, canFollow, liked, following, onLike, onComments, onToggleFollow, onOpenShare, onOpenReport }: ActionBarProps) {
   return (
     <div className="pointer-events-auto flex h-full flex-col items-center justify-end gap-4 pb-3">
       <Link
@@ -42,22 +43,24 @@ export function ActionBar({ video, creator, liked, following, onLike, onComments
         <span className="max-w-[4.5rem] truncate text-xs font-medium text-white/90">@{creator.username}</span>
       </Link>
 
-      <motion.button
-        type="button"
-        onClick={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          onToggleFollow();
-        }}
-        whileTap={{ scale: 0.95 }}
-        className={cn(
-          "inline-flex items-center gap-1 rounded-full px-3 py-2 text-xs font-semibold backdrop-blur-sm transition",
-          following ? "bg-white/15 text-white" : "bg-primary text-primary-foreground"
-        )}
-      >
-        <Plus className="h-3.5 w-3.5" />
-        {following ? "Following" : "Follow"}
-      </motion.button>
+      {canFollow ? (
+        <motion.button
+          type="button"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onToggleFollow();
+          }}
+          whileTap={{ scale: 0.95 }}
+          className={cn(
+            "inline-flex items-center gap-1 rounded-full px-3 py-2 text-xs font-semibold backdrop-blur-sm transition",
+            following ? "bg-white/15 text-white" : "bg-primary text-primary-foreground"
+          )}
+        >
+          <Plus className="h-3.5 w-3.5" />
+          {following ? "Following" : "Follow"}
+        </motion.button>
+      ) : null}
 
       <motion.button
         type="button"

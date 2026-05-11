@@ -5,27 +5,44 @@ import { motion } from "framer-motion";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppStore } from "@/lib/store";
 import { VideoCard } from "@/components/VideoCard";
+import { useAuth } from "@/hooks/useAuth";
 
 export function HomeFeedScreen() {
+  const { user: authUser } = useAuth();
   const videos = useAppStore((state) => state.videos);
-  const following = useAppStore((state) => state.following);
   const notInterested = useAppStore((state) => state.notInterested);
+  const feedMode = useAppStore((state) => state.feedMode);
+  const setFeedMode = useAppStore((state) => state.setFeedMode);
   const setLoading = useAppStore((state) => state.setLoading);
   const isLoading = useAppStore((state) => state.isLoading);
   const hasMoreVideos = useAppStore((state) => state.hasMoreVideos);
   const loadMoreVideos = useAppStore((state) => state.loadMoreVideos);
+  const loadFollowingFromServer = useAppStore((state) => state.loadFollowingFromServer);
+  const loadVideoInteractionsFromServer = useAppStore((state) => state.loadVideoInteractionsFromServer);
   const [activeTab, setActiveTab] = useState<"for-you" | "following">("for-you");
   const [loading, setLocalLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+  const [isScrollSettled, setIsScrollSettled] = useState(true);
   const itemRefs = useRef<Array<HTMLDivElement | null>>([]);
   const loaderRef = useRef<HTMLDivElement | null>(null);
   const fetchTimerRef = useRef<number | null>(null);
+  const scrollIdleTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     setLoading(true);
     void loadMoreVideos();
   }, [loadMoreVideos, setLoading]);
+
+  useEffect(() => {
+    setFeedMode(activeTab);
+  }, [activeTab, setFeedMode]);
+
+  useEffect(() => {
+    if (!authUser?.id) return;
+    void loadFollowingFromServer(authUser.id);
+    void loadVideoInteractionsFromServer();
+  }, [authUser?.id, loadFollowingFromServer, loadVideoInteractionsFromServer]);
 
   useEffect(() => {
     if (!isLoading) {
@@ -35,29 +52,63 @@ export function HomeFeedScreen() {
   }, [isLoading, setLoading]);
 
   const feedVideos = useMemo(() => {
-    const base = videos.filter((video) => !notInterested[video.id]);
-    if (activeTab === "following") {
-      return base.filter((video) => following[video.userId]);
-    }
-    return base;
-  }, [activeTab, following, notInterested, videos]);
+    return videos.filter((video) => !notInterested[video.id]);
+  }, [notInterested, videos]);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (!visible) return;
-        const index = Number((visible.target as HTMLElement).dataset.index);
-        if (!Number.isNaN(index)) setActiveIndex(index);
-      },
-      { threshold: [0.45, 0.6, 0.75] }
-    );
+    const nodes = itemRefs.current;
+    if (!nodes.length) return;
 
-    itemRefs.current.forEach((node) => node && observer.observe(node));
-    return () => observer.disconnect();
-  }, [feedVideos]);
+    let frameId = 0;
+    const updateActiveByViewportCenter = () => {
+      const viewportCenterY = window.innerHeight / 2;
+      let bestIndex = 0;
+      let bestDistance = Number.POSITIVE_INFINITY;
+
+      nodes.forEach((node, index) => {
+        if (!node) return;
+        const rect = node.getBoundingClientRect();
+        const isOnScreen = rect.bottom > 0 && rect.top < window.innerHeight;
+        if (!isOnScreen) return;
+
+        const cardCenter = rect.top + rect.height / 2;
+        const distance = Math.abs(cardCenter - viewportCenterY);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = index;
+        }
+      });
+
+      setActiveIndex(bestIndex);
+    };
+
+    const onScrollOrResize = () => {
+      setIsScrollSettled(false);
+      if (scrollIdleTimerRef.current) {
+        window.clearTimeout(scrollIdleTimerRef.current);
+      }
+      scrollIdleTimerRef.current = window.setTimeout(() => {
+        setIsScrollSettled(true);
+      }, 220);
+
+      if (frameId) cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(updateActiveByViewportCenter);
+    };
+
+    updateActiveByViewportCenter();
+    window.addEventListener("scroll", onScrollOrResize, { passive: true });
+    window.addEventListener("resize", onScrollOrResize);
+
+    return () => {
+      if (frameId) cancelAnimationFrame(frameId);
+      if (scrollIdleTimerRef.current) {
+        window.clearTimeout(scrollIdleTimerRef.current);
+        scrollIdleTimerRef.current = null;
+      }
+      window.removeEventListener("scroll", onScrollOrResize);
+      window.removeEventListener("resize", onScrollOrResize);
+    };
+  }, [feedVideos.length]);
 
   useEffect(() => {
     const sentinel = loaderRef.current;
@@ -136,12 +187,20 @@ export function HomeFeedScreen() {
                 }}
                 data-index={index}
               >
-                <VideoCard video={video} active={index === activeIndex} />
+                <VideoCard
+                  video={video}
+                  active={index === activeIndex && isScrollSettled}
+                />
               </div>
             ))}
             <div ref={loaderRef} className="py-3 text-center text-sm text-muted-foreground">
               {hasMoreVideos ? "Loading more videos..." : "You're all caught up"}
             </div>
+            {!hasMoreVideos && feedMode === "following" && feedVideos.length === 0 ? (
+              <div className="pb-4 text-center text-sm text-muted-foreground">
+                No videos from creators you follow yet.
+              </div>
+            ) : null}
           </>
         )}
       </div>

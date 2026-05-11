@@ -6,12 +6,16 @@ import { BadgeCheck, Edit3, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAppStore } from "@/lib/store";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { VideoFeedDialog } from "@/components/VideoFeedDialog";
 import { FollowListDialog } from "@/components/FollowListDialog";
 import { useAuth } from "@/hooks/useAuth";
 import { useApiUser, useApiUserByUsername } from "@/hooks/useApiUser";
 import { mapApiUserToUi } from "@/lib/backend-adapters";
 import { fetchFollowers, fetchFollowing } from "@/lib/backend-client";
+import { getApiPrefix } from "@/lib/api";
+import { getBearerAuthHeader } from "@/lib/auth-headers";
+import { toast } from "sonner";
 
 type ProfileScreenProps = {
   username?: string;
@@ -28,12 +32,21 @@ export function ProfileScreen({ username }: ProfileScreenProps) {
   const profileMissing = !ownProfile && !profile;
   const likedMap = useAppStore((state) => state.liked);
   const savedMap = useAppStore((state) => state.saved);
+  const followingMap = useAppStore((state) => state.following);
+  const toggleFollow = useAppStore((state) => state.toggleFollow);
+  const loadFollowingFromServer = useAppStore((state) => state.loadFollowingFromServer);
+  const loadVideoInteractionsFromServer = useAppStore((state) => state.loadVideoInteractionsFromServer);
   const allVideos = useAppStore((state) => state.videos);
   const loadMoreVideos = useAppStore((state) => state.loadMoreVideos);
+  const editVideoLocal = useAppStore((state) => state.editVideoLocal);
+  const removeVideoLocal = useAppStore((state) => state.removeVideoLocal);
   const [tab, setTab] = useState("videos");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
   const [followDialogOpen, setFollowDialogOpen] = useState(false);
+  const [editingVideo, setEditingVideo] = useState<{ id: string; caption: string } | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [savingTitle, setSavingTitle] = useState(false);
   const [followers, setFollowers] = useState<ReturnType<typeof mapApiUserToUi>[]>([]);
   const [following, setFollowing] = useState<ReturnType<typeof mapApiUserToUi>[]>([]);
 
@@ -52,10 +65,18 @@ export function ProfileScreen({ username }: ProfileScreenProps) {
   const videosLabel = `Videos (${profileVideos.length})`;
   const likedLabel = ownProfile ? `My likes (${likedVideos.length})` : `Liked (${likedVideos.length})`;
   const savedLabel = ownProfile ? `My saved (${savedVideos.length})` : `Saved (${savedVideos.length})`;
+  const isSelfProfile = Boolean(authUser?.id && profile?.id && authUser.id === profile.id);
+  const isFollowingProfile = Boolean(profile?.id && followingMap[profile.id]);
+
+  useEffect(() => {
+    if (!authUser?.id) return;
+    void loadFollowingFromServer(authUser.id);
+    void loadVideoInteractionsFromServer();
+  }, [authUser?.id, loadFollowingFromServer, loadVideoInteractionsFromServer]);
 
   useEffect(() => {
     let cancelled = false;
-    if (!followDialogOpen || !profile?.id) return;
+    if (!profile?.id) return;
 
     const load = async () => {
       try {
@@ -85,9 +106,98 @@ export function ProfileScreen({ username }: ProfileScreenProps) {
     return () => {
       cancelled = true;
     };
-  }, [followDialogOpen, profile?.id]);
+  }, [profile?.id]);
 
   const selectedList = tab === "videos" ? profileVideos : tab === "liked" ? likedVideos : savedVideos;
+
+  const handleStartEditVideo = (videoId: string, currentCaption: string) => {
+    setEditingVideo({ id: videoId, caption: currentCaption });
+    setEditingTitle(currentCaption);
+  };
+
+  const handleSaveEditedTitle = async () => {
+    const videoId = editingVideo?.id;
+    const previousCaption = editingVideo?.caption || "";
+    const nextCaption = editingTitle.trim();
+    if (!videoId) {
+      setEditingVideo(null);
+      return;
+    }
+    if (!nextCaption) {
+      toast.error("Title cannot be empty.");
+      return;
+    }
+    if (nextCaption === previousCaption) {
+      setEditingVideo(null);
+      setEditingTitle("");
+      return;
+    }
+
+    const auth = getBearerAuthHeader();
+    if (!("Authorization" in auth)) {
+      toast.error("Please sign in first.");
+      return;
+    }
+
+    try {
+      setSavingTitle(true);
+      const res = await fetch(`${getApiPrefix()}/v1/videos/${videoId}`, {
+        method: "PATCH",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...auth,
+        },
+        body: JSON.stringify({ title: nextCaption }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { message?: string };
+        toast.error(body?.message || `Edit failed (${res.status})`);
+        return;
+      }
+      const tags = nextCaption
+        .split(/\s+/)
+        .map((word) => word.trim())
+        .filter(Boolean)
+        .slice(0, 5)
+        .map((word) => `#${word.replace(/[^a-z0-9_]/gi, "").toLowerCase()}`)
+        .filter((tag) => tag.length > 1);
+      editVideoLocal(videoId, { caption: nextCaption, tags });
+      toast.success("Video title updated.");
+      setEditingVideo(null);
+      setEditingTitle("");
+    } catch {
+      toast.error("Network error while editing.");
+    } finally {
+      setSavingTitle(false);
+    }
+  };
+
+  const handleDeleteVideo = async (videoId: string) => {
+    if (!window.confirm("Delete this video permanently?")) return;
+    const auth = getBearerAuthHeader();
+    if (!("Authorization" in auth)) {
+      toast.error("Please sign in first.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${getApiPrefix()}/v1/videos/${videoId}`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: { ...auth },
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { message?: string };
+        toast.error(body?.message || `Delete failed (${res.status})`);
+        return;
+      }
+      removeVideoLocal(videoId);
+      toast.success("Video deleted.");
+    } catch {
+      toast.error("Network error while deleting.");
+    }
+  };
 
   if (profileMissing || !profile) {
     return (
@@ -143,13 +253,19 @@ export function ProfileScreen({ username }: ProfileScreenProps) {
                 Edit profile
               </button>
             ) : (
-              <button
-                type="button"
-                className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:scale-[1.01]"
-              >
-                <Users className="h-4 w-4" />
-                Follow
-              </button>
+              !isSelfProfile ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!profile?.id) return;
+                    void toggleFollow(profile.id);
+                  }}
+                  className="inline-flex h-12 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground transition hover:scale-[1.01]"
+                >
+                  <Users className="h-4 w-4" />
+                  {isFollowingProfile ? "Following" : "Follow"}
+                </button>
+              ) : null
             )}
           </div>
         </div>
@@ -166,6 +282,9 @@ export function ProfileScreen({ username }: ProfileScreenProps) {
             <SectionLabel title="Your videos" description={ownProfile ? "Clips you posted to your profile." : `${profile.displayName}'s posted clips.`} />
             <Grid
               videos={profileVideos}
+              canManage={ownProfile}
+              onEditVideo={handleStartEditVideo}
+              onDeleteVideo={handleDeleteVideo}
               onSelect={(index) => {
                 setStartIndex(index);
                 setDialogOpen(true);
@@ -176,6 +295,9 @@ export function ProfileScreen({ username }: ProfileScreenProps) {
             <SectionLabel title={ownProfile ? "My likes" : "Liked videos"} description={ownProfile ? "Clips you have liked." : `${profile.displayName}'s liked clips.`} />
             <Grid
               videos={likedVideos}
+              canManage={false}
+              onEditVideo={handleStartEditVideo}
+              onDeleteVideo={handleDeleteVideo}
               onSelect={(index) => {
                 setStartIndex(index);
                 setDialogOpen(true);
@@ -186,6 +308,9 @@ export function ProfileScreen({ username }: ProfileScreenProps) {
             <SectionLabel title={ownProfile ? "My saved" : "Saved videos"} description={ownProfile ? "Clips you have saved for later." : `${profile.displayName}'s saved clips.`} />
             <Grid
               videos={savedVideos}
+              canManage={false}
+              onEditVideo={handleStartEditVideo}
+              onDeleteVideo={handleDeleteVideo}
               onSelect={(index) => {
                 setStartIndex(index);
                 setDialogOpen(true);
@@ -197,6 +322,63 @@ export function ProfileScreen({ username }: ProfileScreenProps) {
 
       <VideoFeedDialog open={dialogOpen} onOpenChange={setDialogOpen} videos={selectedList} startIndex={startIndex} />
       <FollowListDialog open={followDialogOpen} onOpenChange={setFollowDialogOpen} followers={followers} following={following} title={`${profile.displayName}'s network`} />
+      <Dialog
+        open={Boolean(editingVideo)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingVideo(null);
+            setEditingTitle("");
+            setSavingTitle(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit video title</DialogTitle>
+            <DialogDescription>Update the title shown on your profile and feed.</DialogDescription>
+          </DialogHeader>
+          <div className="mt-2 space-y-4">
+            <input
+              type="text"
+              value={editingTitle}
+              onChange={(event) => setEditingTitle(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void handleSaveEditedTitle();
+                }
+              }}
+              maxLength={120}
+              autoFocus
+              placeholder="Enter a new title"
+              className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-primary"
+            />
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingVideo(null);
+                  setEditingTitle("");
+                  setSavingTitle(false);
+                }}
+                className="rounded-md border border-border px-3 py-2 text-sm text-foreground hover:bg-white/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={savingTitle}
+                onClick={() => {
+                  void handleSaveEditedTitle();
+                }}
+                className="rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+              >
+                {savingTitle ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
@@ -210,7 +392,19 @@ function SectionLabel({ title, description }: { title: string; description: stri
   );
 }
 
-function Grid({ videos, onSelect }: { videos: ReturnType<typeof useAppStore.getState>['videos']; onSelect: (index: number) => void }) {
+function Grid({
+  videos,
+  onSelect,
+  canManage,
+  onEditVideo,
+  onDeleteVideo,
+}: {
+  videos: ReturnType<typeof useAppStore.getState>['videos'];
+  onSelect: (index: number) => void;
+  canManage: boolean;
+  onEditVideo: (videoId: string, caption: string) => void;
+  onDeleteVideo: (videoId: string) => Promise<void>;
+}) {
   if (videos.length === 0) {
     return <div className="mt-6 rounded-[2rem] border border-dashed border-border bg-white/5 p-10 text-center text-sm text-muted-foreground">No clips in this section yet.</div>;
   }
@@ -218,22 +412,88 @@ function Grid({ videos, onSelect }: { videos: ReturnType<typeof useAppStore.getS
   return (
     <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {videos.map((video, index) => (
-        <button
+        <article
           key={video.id}
-          type="button"
-          onClick={() => onSelect(index)}
           className="group overflow-hidden rounded-[2rem] border border-border bg-white/5 text-left transition hover:-translate-y-1 hover:bg-white/10"
         >
-          <div className="relative aspect-[9/12]">
-            <img src={video.poster} alt={video.caption} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
+          <button
+            type="button"
+            onClick={() => onSelect(index)}
+            className="relative block aspect-[9/12] w-full text-left"
+          >
+            <VideoCover src={video.src} poster={video.poster} caption={video.caption} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-4 text-white">
               <p className="line-clamp-2 text-sm font-medium">{video.caption}</p>
               <p className="mt-1 text-xs text-white/75">{video.likes.toLocaleString()} likes</p>
             </div>
-          </div>
-        </button>
+          </button>
+          {canManage ? (
+            <div className="flex items-center gap-2 border-t border-white/10 p-3">
+              <button
+                type="button"
+                onClick={() => {
+                  onEditVideo(video.id, video.caption);
+                }}
+                className="rounded-md bg-white/20 px-3 py-1.5 text-xs font-semibold text-white hover:bg-white/30"
+              >
+                Edit title
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  void onDeleteVideo(video.id);
+                }}
+                className="rounded-md bg-red-500/80 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-500"
+              >
+                Delete
+              </button>
+            </div>
+          ) : null}
+        </article>
       ))}
     </div>
+  );
+}
+
+function VideoCover({ src, poster, caption }: { src: string; poster: string; caption: string }) {
+  const [showPoster, setShowPoster] = useState(false);
+
+  if (showPoster) {
+    return (
+      <img
+        src={poster}
+        alt={caption}
+        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+      />
+    );
+  }
+
+  return (
+    <video
+      src={src}
+      poster={poster}
+      muted
+      playsInline
+      preload="auto"
+      onLoadedMetadata={(event) => {
+        const el = event.currentTarget;
+        const targetTime = Number.isFinite(el.duration) && el.duration > 0
+          ? Math.min(1, el.duration / 3)
+          : 0;
+        if (targetTime > 0) {
+          try {
+            el.currentTime = targetTime;
+          } catch {
+            // keep initial frame if seeking is blocked
+          }
+        }
+      }}
+      onCanPlay={(event) => {
+        event.currentTarget.pause();
+      }}
+      onError={() => setShowPoster(true)}
+      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+    />
   );
 }

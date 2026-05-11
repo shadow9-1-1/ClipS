@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { User } from "@/data/mock";
+import type { User } from "@/lib/types";
 import { fetchUserById, fetchUserByUsername } from "@/lib/backend-client";
 import { mapApiUserToUi } from "@/lib/backend-adapters";
 

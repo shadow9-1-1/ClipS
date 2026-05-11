@@ -7,6 +7,7 @@ const {
 	getUserProfileByUsername,
 	updatePreferences,
 } = require('../controllers/userController');
+const { getMyLikedVideos, getMySavedVideos } = require('../controllers/interactionController');
 const { follow, unfollow, followers, following } = require('../controllers/followController');
 const asyncHandler = require('../utils/asyncHandler');
 const protect = require('../middleware/protect');
@@ -22,6 +23,8 @@ const { emptySchema } = require('../utils/commonSchemas');
 const router = express.Router();
 
 router.get('/me', asyncHandler(protect), validateRequest(emptySchema), asyncHandler(getMe));
+router.get('/me/liked-videos', asyncHandler(protect), validateRequest(emptySchema), asyncHandler(getMyLikedVideos));
+router.get('/me/saved-videos', asyncHandler(protect), validateRequest(emptySchema), asyncHandler(getMySavedVideos));
 router.patch('/updateMe', asyncHandler(protect), validateRequest(updateMeSchema), asyncHandler(updateMe));
 router.patch('/preferences', asyncHandler(protect), validateRequest(updatePreferencesSchema), asyncHandler(updatePreferences));
 

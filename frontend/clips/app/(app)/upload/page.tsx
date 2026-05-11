@@ -3,7 +3,7 @@ import { UploadScreen } from "@/components/screens/UploadScreen";
 
 export const metadata: Metadata = {
   title: "Upload to ClipS",
-  description: "Create a mock clip, preview it locally, and publish to your profile.",
+  description: "Upload a clip, preview it locally, and publish to your profile.",
 };
 
 export default function UploadPage() {

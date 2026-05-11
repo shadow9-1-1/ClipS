@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CheckCircle2 } from "lucide-react";
-import type { Video } from "@/data/mock";
+import type { Video } from "@/lib/types";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useAppStore } from "@/lib/store";
 import { toast } from "sonner";
@@ -17,7 +17,6 @@ type ReportDialogProps = {
 
 export function ReportDialog({ open, onOpenChange, video }: ReportDialogProps) {
   const reportVideo = useAppStore((state) => state.reportVideo);
-  const setError = useAppStore((state) => state.setError);
   const [step, setStep] = useState(0);
   const [reason, setReason] = useState<(typeof reasons)[number] | "">("");
   const [details, setDetails] = useState("");
@@ -32,10 +31,6 @@ export function ReportDialog({ open, onOpenChange, video }: ReportDialogProps) {
 
   const submit = () => {
     if (!reason) return;
-    if (Math.random() < 0.1) {
-      setError({ title: "Report failed", message: "A simulated network error prevented this report from being sent." });
-      return;
-    }
 
     reportVideo(video.id, reason, details.trim() || undefined);
     setDone(true);

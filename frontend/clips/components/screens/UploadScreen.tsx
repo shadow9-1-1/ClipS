@@ -33,7 +33,6 @@ export function UploadScreen() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [caption, setCaption] = useState("");
-  const [music, setMusic] = useState("");
   const [orientation, setOrientation] = useState<"portrait" | "landscape">("portrait");
   const [dragActive, setDragActive] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -43,12 +42,37 @@ export function UploadScreen() {
   useEffect(() => {
     if (!file) {
       setPreview("");
+      setOrientation("portrait");
       return;
     }
 
     const objectUrl = URL.createObjectURL(file);
     setPreview(objectUrl);
-    return () => URL.revokeObjectURL(objectUrl);
+
+    const detector = document.createElement("video");
+    const applyDetectedOrientation = () => {
+      if (detector.videoWidth > detector.videoHeight) {
+        setOrientation("landscape");
+      } else {
+        setOrientation("portrait");
+      }
+    };
+    const fallbackOrientation = () => setOrientation("portrait");
+
+    detector.preload = "metadata";
+    detector.muted = true;
+    detector.src = objectUrl;
+    detector.addEventListener("loadedmetadata", applyDetectedOrientation, {
+      once: true,
+    });
+    detector.addEventListener("error", fallbackOrientation, { once: true });
+
+    return () => {
+      detector.removeEventListener("loadedmetadata", applyDetectedOrientation);
+      detector.removeEventListener("error", fallbackOrientation);
+      detector.src = "";
+      URL.revokeObjectURL(objectUrl);
+    };
   }, [file]);
 
   const submit = async () => {
@@ -73,6 +97,8 @@ export function UploadScreen() {
     try {
       const form = new FormData();
       form.append("video", file);
+      form.append("title", text);
+      form.append("description", text);
 
       const res = await fetch(`${getApiPrefix()}/v1/videos/upload`, {
         method: "POST",
@@ -96,7 +122,7 @@ export function UploadScreen() {
       addVideo({
         ...mapped,
         caption: text,
-        music: music.trim() || "Original audio",
+        music: "Original audio",
         tags: text.split(/\s+/).filter(Boolean).slice(0, 3).map((tag) => `#${tag.replace(/[^a-z0-9]/gi, "").toLowerCase()}`),
         src: accessUrl || mapped.src,
         poster: accessUrl || mapped.poster || buildPoster("Uploaded clip"),
@@ -169,26 +195,10 @@ export function UploadScreen() {
               className="w-full rounded-3xl border border-border bg-background/80 px-4 py-3 outline-none placeholder:text-muted-foreground"
             />
           </label>
-          <label className="block space-y-2 text-sm font-medium">
-            <span>Music</span>
-            <input
-              value={music}
-              onChange={(event) => setMusic(event.target.value)}
-              placeholder="Track name or original audio"
-              className="h-12 w-full rounded-full border border-border bg-background/80 px-4 outline-none placeholder:text-muted-foreground"
-            />
-          </label>
-          <label className="block space-y-2 text-sm font-medium">
-            <span>Orientation</span>
-            <select
-              value={orientation}
-              onChange={(event) => setOrientation(event.target.value as "portrait" | "landscape")}
-              className="h-12 w-full rounded-full border border-border bg-background/80 px-4 outline-none"
-            >
-              <option value="portrait">Portrait</option>
-              <option value="landscape">Landscape</option>
-            </select>
-          </label>
+          <div className="rounded-2xl border border-border bg-background/60 px-4 py-3 text-sm text-muted-foreground">
+            Orientation detected automatically:{" "}
+            <span className="font-semibold capitalize text-foreground">{orientation}</span>
+          </div>
         </div>
 
         <button
@@ -217,7 +227,7 @@ export function UploadScreen() {
         <div className="glass rounded-[2.5rem] p-5 text-sm leading-relaxed text-muted-foreground">
           <p className="font-semibold text-foreground">Upload flow</p>
           <ul className="mt-3 space-y-2">
-            <li>• Mock upload only. No backend, no network APIs.</li>
+            <li>• Upload sends your file to the backend API.</li>
             <li>• Preview uses <span className="text-foreground">URL.createObjectURL</span>.</li>
             <li>• Successful submit redirects to your profile.</li>
           </ul>

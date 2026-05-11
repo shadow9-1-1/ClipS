@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Pause, Play, RotateCcw, Volume2, VolumeX, Maximize2, Heart } from "lucide-react";
-import type { Video } from "@/data/mock";
+import type { Video } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type VideoPlayerProps = {
@@ -21,19 +21,52 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
   const [progress, setProgress] = useState(0);
   const [burstCount, setBurstCount] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const wasActiveRef = useRef(false);
+  const shouldRestartRef = useRef(false);
+
+  const resetToStart = (element: HTMLVideoElement) => {
+    try {
+      element.currentTime = 0;
+    } catch {
+      const resetOnMetadata = () => {
+        try {
+          element.currentTime = 0;
+        } catch {
+          // keep current position if browser still blocks seeking
+        }
+      };
+      element.addEventListener("loadedmetadata", resetOnMetadata, { once: true });
+    }
+  };
+
+  const tryAutoPlay = () => {
+    const element = videoRef.current;
+    if (!element || !active) return;
+    if (shouldRestartRef.current) {
+      resetToStart(element);
+      shouldRestartRef.current = false;
+    }
+    element.muted = isMuted;
+    void element.play().catch(() => {
+      // Some browsers reject early autoplay calls before media is ready.
+    });
+  };
 
   useEffect(() => {
     const element = videoRef.current;
     if (!element) return;
 
     if (active) {
-      void element.play().catch(() => undefined);
-      setIsPlaying(true);
+      tryAutoPlay();
     } else {
+      if (wasActiveRef.current) {
+        shouldRestartRef.current = true;
+        resetToStart(element);
+      }
       element.pause();
-      setIsPlaying(false);
     }
-  }, [active]);
+    wasActiveRef.current = active;
+  }, [active, video.src]);
 
   useEffect(() => {
     const element = videoRef.current;
@@ -142,6 +175,16 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
         muted={isMuted}
         loop
         preload="metadata"
+        onLoadedData={() => {
+          if (active) {
+            tryAutoPlay();
+          }
+        }}
+        onCanPlay={() => {
+          if (active) {
+            tryAutoPlay();
+          }
+        }}
         onTimeUpdate={(event) => {
           const target = event.currentTarget;
           if (!target.duration) return;

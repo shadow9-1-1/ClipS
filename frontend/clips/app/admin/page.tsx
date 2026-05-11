@@ -9,7 +9,6 @@ import HealthBadge from "@/components/admin/HealthBadge";
 import { Spinner } from "@/components/ui/Spinner";
 import { getApiPrefix } from "@/lib/api";
 import { getBearerAuthHeader } from "@/lib/auth-headers";
-import { users, videos } from "@/data/mock";
 
 type AdminStats = {
   totalUsers?: number;
@@ -41,17 +40,6 @@ function formatBytes(n: number | undefined): string {
   const mb = n / (1024 * 1024);
   return `${mb.toFixed(1)} MB`;
 }
-
-const demoStats: AdminStats = {
-  totalUsers: users.length,
-  totalVideos: videos.length,
-};
-
-const demoHealth: AdminHealth = {
-  uptime: typeof performance !== "undefined" ? performance.now() / 1000 : 0,
-  dbStatus: "demo",
-  memoryUsage: undefined,
-};
 
 export default function AdminDashboardPage() {
   const { user, loading: authLoading } = useAuth();
@@ -118,19 +106,19 @@ export default function AdminDashboardPage() {
         const healthJson = (await healthRes.json()) as { data?: AdminHealth };
 
         if (!cancelled) {
-          setStats(statsJson.data ?? demoStats);
-          setHealth(healthJson.data ?? demoHealth);
+          setStats(statsJson.data ?? null);
+          setHealth(healthJson.data ?? null);
           setLastUpdated(new Date());
         }
       } catch (error) {
         if (!cancelled) {
-          setStats(demoStats);
-          setHealth(demoHealth);
+          setStats(null);
+          setHealth(null);
           setLastUpdated(new Date());
           setFetchError(
             error instanceof Error
-              ? `Demo data shown: ${error.message}`
-              : "Demo data shown because the backend could not be reached."
+              ? `Could not load dashboard data: ${error.message}`
+              : "Could not load dashboard data."
           );
         }
       } finally {

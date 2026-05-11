@@ -4,11 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { BadgeCheck, Clock3, Music2, Hash } from "lucide-react";
 import Link from "next/link";
-import type { Video } from "@/data/mock";
+import type { Video } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { useMobile } from "@/hooks/use-mobile";
 import { useApiUser } from "@/hooks/useApiUser";
+import { useAuth } from "@/hooks/useAuth";
 import { buildAvatarFromUsername } from "@/lib/placeholders";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { ActionBar } from "@/components/ActionBar";
@@ -24,6 +25,7 @@ type VideoCardProps = {
 };
 
 export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) {
+  const { user: authUser } = useAuth();
   const { user: creator } = useApiUser(video.userId);
   const creatorProfile = creator ?? {
     id: video.userId,
@@ -45,6 +47,7 @@ export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) 
   const [shareOpen, setShareOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const canFollow = Boolean(authUser?.id && authUser.id !== video.userId);
 
   const stats = useMemo(() => {
     return [
@@ -160,11 +163,16 @@ export function VideoCard({ video, active, onRemove, compact }: VideoCardProps) 
           <ActionBar
             video={video}
             creator={creatorProfile}
+            canFollow={canFollow}
             liked={liked}
             following={following}
             onLike={() => setLiked(video.id, !liked)}
             onComments={() => setCommentsOpen(true)}
-            onToggleFollow={() => toggleFollow(video.userId)}
+            onToggleFollow={() => {
+              if (canFollow) {
+                void toggleFollow(video.userId);
+              }
+            }}
             onOpenShare={() => setShareOpen(true)}
             onOpenReport={() => setReportOpen(true)}
           />

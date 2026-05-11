@@ -3,6 +3,7 @@ const express = require('express');
 const { create, list, getById, followingFeed, trendingFeed, uploadBinary, update, remove } = require('../controllers/videoController');
 const { createReview, listReviews } = require('../controllers/reviewController');
 const { like, unlike, getEngagement } = require('../controllers/likeController');
+const { save, unsave } = require('../controllers/saveController');
 const optionalAuth = require('../middleware/optionalAuth');
 const asyncHandler = require('../utils/asyncHandler');
 const protect = require('../middleware/protect');
@@ -37,6 +38,10 @@ router.get('/:id', validateRequest(videoIdParamSchema), asyncHandler(getById));
 router.post('/:id/reviews', asyncHandler(protect), validateRequest(createReviewSchema), asyncHandler(createReview));
 router.post('/:id/likes', asyncHandler(protect), validateRequest(videoIdParamSchema), asyncHandler(like));
 router.delete('/:id/likes', asyncHandler(protect), validateRequest(videoIdParamSchema), asyncHandler(unlike));
+router.post('/:id/saves', asyncHandler(protect), validateRequest(videoIdParamSchema), asyncHandler(save));
+router.delete('/:id/saves', asyncHandler(protect), validateRequest(videoIdParamSchema), asyncHandler(unsave));
+router.post('/:id/save', asyncHandler(protect), validateRequest(videoIdParamSchema), asyncHandler(save));
+router.delete('/:id/save', asyncHandler(protect), validateRequest(videoIdParamSchema), asyncHandler(unsave));
 router.patch('/:id', asyncHandler(protect), validateRequest(updateVideoSchema), asyncHandler(update));
 router.delete('/:id', asyncHandler(protect), validateRequest(videoIdParamSchema), asyncHandler(remove));
 

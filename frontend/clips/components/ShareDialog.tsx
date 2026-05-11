@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Copy, Facebook, MessageCircle, Mail, Send, Share2, Smartphone, MessageSquareMore } from "lucide-react";
-import type { Video } from "@/data/mock";
+import type { Video } from "@/lib/types";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 

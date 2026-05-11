@@ -3,7 +3,7 @@ import { ProfileScreen } from "@/components/screens/ProfileScreen";
 
 export const metadata: Metadata = {
   title: "Your Profile | ClipS",
-  description: "Review your mock clip library, liked posts, and saved videos.",
+  description: "Review your clip library, liked posts, and saved videos.",
 };
 
 export default function ProfilePage() {

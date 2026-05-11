@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, KeyRound, Sparkles, UserRound } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { AuthService } from "@/lib/auth-service";
 import { toast } from "sonner";
 
@@ -12,7 +11,6 @@ type AuthScreenProps = {
 };
 
 export function AuthScreen({ mode }: AuthScreenProps) {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -156,41 +154,6 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             {busy ? "Please wait..." : mode === "login" ? "Sign in" : "Create account"}
             <ArrowRight className="h-4 w-4" />
           </button>
-
-          {mode === "login" ? (
-            <button
-              type="button"
-              onClick={async () => {
-                setError(null);
-                setBusy(true);
-                try {
-                  const demoToken = btoa(
-                    JSON.stringify({
-                      id: "demo_admin",
-                      username: "admin",
-                      email: "demo@admin.com",
-                      role: "admin",
-                      iat: Math.floor(Date.now() / 1000),
-                      exp: Math.floor(Date.now() / 1000) + 86400,
-                    })
-                  );
-                  AuthService.saveToken(demoToken);
-                  toast.success("Signed in as Demo Admin");
-                  window.location.assign("/admin");
-                } catch (err) {
-                  const message = err instanceof Error ? err.message : "Demo sign-in failed";
-                  setError(message);
-                  toast.error(message);
-                } finally {
-                  setBusy(false);
-                }
-              }}
-              disabled={busy}
-              className="mt-2 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-border bg-background/60 px-5 text-sm font-semibold text-foreground transition hover:scale-[1.01] hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Sign in as Demo Admin
-            </button>
-          ) : null}
 
           <div className="pt-2 text-center text-sm text-muted-foreground">
             {mode === "login" ? (

@@ -2,18 +2,16 @@
 
 import { useMemo } from "react";
 import { create } from "zustand";
-import {
-  comments as mockComments,
-  currentUserId,
-  getUser,
-  type Comment,
-  type User,
-  type Video,
-} from "@/data/mock";
+import type { Comment, User, Video } from "@/lib/types";
 import { getApiPrefix } from "@/lib/api";
 import { getBearerAuthHeader } from "@/lib/auth-headers";
-import { fetchVideos, createPresignedUrl } from "@/lib/backend-client";
+import {
+  fetchFollowingFeed,
+  fetchTrendingFeed,
+  createPresignedUrl,
+} from "@/lib/backend-client";
 import { mapApiVideoToUi } from "@/lib/backend-adapters";
+import { buildAvatarFromUsername } from "@/lib/placeholders";
 
 type ToastableError = {
   title: string;
@@ -57,6 +55,7 @@ export type AppState = {
   reported: Record<string, ReportRecord>;
   profileEdits: Record<string, ProfileEdits>;
   settings: Settings;
+  feedMode: "for-you" | "following";
   isAuthed: boolean;
   isLoading: boolean;
   hasMoreVideos: boolean;
@@ -70,8 +69,13 @@ export type AppState = {
   reportVideo: (videoId: string, reason: string, details?: string) => void;
   addComment: (videoId: string, text: string) => void;
   addVideo: (video: Video | NewVideoInput) => void;
+  editVideoLocal: (videoId: string, updates: Partial<Pick<Video, "caption" | "tags">>) => void;
+  removeVideoLocal: (videoId: string) => void;
   updateProfile: (profile: ProfileEdits) => void;
   updateSettings: (settings: Partial<Settings>) => void;
+  loadFollowingFromServer: (viewerId: string) => Promise<void>;
+  loadVideoInteractionsFromServer: () => Promise<void>;
+  setFeedMode: (mode: "for-you" | "following") => void;
   loadMoreVideos: () => void;
   setAuthed: (isAuthed: boolean) => void;
   setLoading: (isLoading: boolean) => void;
@@ -79,26 +83,7 @@ export type AppState = {
 };
 
 const FEED_PAGE_SIZE = 6;
-
-const initialLiked: Record<string, boolean> = {
-  v1: true,
-  v3: true,
-  v5: true,
-  v8: true,
-};
-
-const initialSaved: Record<string, boolean> = {
-  v2: true,
-  v4: true,
-  v6: true,
-  v9: true,
-};
-
-const initialFollowing: Record<string, boolean> = {
-  u_nova: true,
-  u_flux: true,
-  u_glow: true,
-};
+const LOCAL_CURRENT_USER_ID = "me";
 
 function clampRating(value: number) {
   return Math.min(5, Math.max(1, Math.round(value)));
@@ -107,11 +92,11 @@ function clampRating(value: number) {
 export const useAppStore = create<AppState>((set, get) => ({
   allVideos: [],
   videos: [],
-  comments: mockComments.map((comment) => ({ ...comment })),
-  liked: { ...initialLiked },
-  saved: { ...initialSaved },
+  comments: [],
+  liked: {},
+  saved: {},
   ratings: {},
-  following: { ...initialFollowing },
+  following: {},
   notInterested: {},
   reported: {},
   profileEdits: {},
@@ -122,6 +107,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     reduceData: false,
     language: "English",
   },
+  feedMode: "for-you",
   isAuthed: true,
   isLoading: false,
   hasMoreVideos: true,
@@ -171,6 +157,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   toggleSave: (videoId) => {
     const { saved, videos } = get();
     const active = Boolean(saved[videoId]);
+    const prev = { saved: { ...saved }, videos: [...videos] };
 
     set({
       saved: { ...saved, [videoId]: !active },
@@ -180,6 +167,60 @@ export const useAppStore = create<AppState>((set, get) => ({
           : video
       ),
     });
+
+    const auth = getBearerAuthHeader();
+    if (!("Authorization" in auth)) {
+      set({ saved: prev.saved, videos: prev.videos });
+      set({ error: { title: "Sign in required", message: "Please sign in to save videos." } });
+      return;
+    }
+
+    void (async () => {
+      try {
+        const method = active ? "DELETE" : "POST";
+        const endpoints = [
+          `${getApiPrefix()}/v1/videos/${videoId}/saves`,
+          `${getApiPrefix()}/v1/videos/${videoId}/save`,
+        ];
+
+        let finalErrorMessage = "Save request failed";
+        let matched = false;
+        for (const endpoint of endpoints) {
+          const res = await fetch(endpoint, {
+            method,
+            credentials: "include",
+            headers: { ...auth },
+          });
+          if (res.ok) {
+            matched = true;
+            break;
+          }
+
+          const body = (await res.json().catch(() => ({}))) as { message?: string };
+          finalErrorMessage = body?.message || `Save request failed (${res.status})`;
+
+          // Keep trying fallback paths when route is missing.
+          if (res.status !== 404) {
+            break;
+          }
+        }
+
+        if (!matched) {
+          throw new Error(finalErrorMessage);
+        }
+      } catch (err) {
+        set({ saved: prev.saved, videos: prev.videos });
+        set({
+          error: {
+            title: "Save failed",
+            message:
+              err instanceof Error && err.message
+                ? err.message
+                : "Could not update saved videos. Please try again.",
+          },
+        });
+      }
+    })();
   },
   rateVideo: (videoId, ratingValue) => {
     const rating = clampRating(ratingValue);
@@ -226,10 +267,21 @@ export const useAppStore = create<AppState>((set, get) => ({
           credentials: "include",
         }
       );
-      if (!res.ok) throw new Error("Follow request failed");
-    } catch {
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { message?: string };
+        throw new Error(body?.message || "Follow request failed");
+      }
+    } catch (err) {
       set({ following: prev });
-      set({ error: { title: "Follow failed", message: "Could not update follow. Please try again." } });
+      set({
+        error: {
+          title: "Follow failed",
+          message:
+            err instanceof Error && err.message
+              ? err.message
+              : "Could not update follow. Please try again.",
+        },
+      });
     }
   },
   markNotInterested: (videoId) => {
@@ -253,7 +305,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     const newComment: Comment = {
       id: `c_${Date.now()}`,
       videoId,
-      userId: currentUserId,
+      userId: LOCAL_CURRENT_USER_ID,
       text,
       likes: 0,
       createdAt: new Date().toISOString(),
@@ -283,7 +335,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
       : {
           id: `v_${Date.now()}`,
-          userId: currentUserId,
+          userId: LOCAL_CURRENT_USER_ID,
           caption: video.caption,
           music: video.music,
           tags: video.tags,
@@ -306,12 +358,52 @@ export const useAppStore = create<AppState>((set, get) => ({
       hasMoreVideos: true,
     }));
   },
+  editVideoLocal: (videoId, updates) => {
+    const applyUpdates = (video: Video) =>
+      video.id === videoId
+        ? {
+            ...video,
+            ...(typeof updates.caption === "string" ? { caption: updates.caption } : {}),
+            ...(Array.isArray(updates.tags) ? { tags: updates.tags } : {}),
+          }
+        : video;
+
+    set(({ videos, allVideos }) => ({
+      videos: videos.map(applyUpdates),
+      allVideos: allVideos.map(applyUpdates),
+    }));
+  },
+  removeVideoLocal: (videoId) => {
+    set(({ videos, allVideos, liked, saved, ratings, notInterested, reported }) => {
+      const nextLiked = { ...liked };
+      const nextSaved = { ...saved };
+      const nextRatings = { ...ratings };
+      const nextNotInterested = { ...notInterested };
+      const nextReported = { ...reported };
+      delete nextLiked[videoId];
+      delete nextSaved[videoId];
+      delete nextRatings[videoId];
+      delete nextNotInterested[videoId];
+      delete nextReported[videoId];
+
+      return {
+        videos: videos.filter((video) => video.id !== videoId),
+        allVideos: allVideos.filter((video) => video.id !== videoId),
+        comments: get().comments.filter((comment) => comment.videoId !== videoId),
+        liked: nextLiked,
+        saved: nextSaved,
+        ratings: nextRatings,
+        notInterested: nextNotInterested,
+        reported: nextReported,
+      };
+    });
+  },
   updateProfile: (profile) => {
     set(({ profileEdits }) => ({
       profileEdits: {
         ...profileEdits,
-        [currentUserId]: {
-          ...profileEdits[currentUserId],
+        [LOCAL_CURRENT_USER_ID]: {
+          ...profileEdits[LOCAL_CURRENT_USER_ID],
           ...profile,
         },
       },
@@ -320,14 +412,97 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateSettings: (settings) => {
     set(({ settings: current }) => ({ settings: { ...current, ...settings } }));
   },
+  loadFollowingFromServer: async (viewerId) => {
+    const auth = getBearerAuthHeader();
+    if (!("Authorization" in auth) || !viewerId) return;
+
+    try {
+      const res = await fetch(`${getApiPrefix()}/v1/users/${viewerId}/following`, {
+        method: "GET",
+        credentials: "include",
+        headers: { ...auth },
+        cache: "no-store",
+      });
+      if (!res.ok) return;
+      const body = (await res.json().catch(() => ({}))) as {
+        data?: { following?: Array<{ id?: string; _id?: string }> };
+      };
+      const nextFollowing: Record<string, boolean> = {};
+      for (const row of body?.data?.following ?? []) {
+        const id = String(row?.id || row?._id || "");
+        if (id) nextFollowing[id] = true;
+      }
+      set({ following: nextFollowing });
+    } catch {
+      // keep existing map on network failure
+    }
+  },
+  loadVideoInteractionsFromServer: async () => {
+    const auth = getBearerAuthHeader();
+    if (!("Authorization" in auth)) return;
+
+    try {
+      const [likedRes, savedRes] = await Promise.all([
+        fetch(`${getApiPrefix()}/v1/users/me/liked-videos`, {
+          method: "GET",
+          credentials: "include",
+          headers: { ...auth },
+          cache: "no-store",
+        }),
+        fetch(`${getApiPrefix()}/v1/users/me/saved-videos`, {
+          method: "GET",
+          credentials: "include",
+          headers: { ...auth },
+          cache: "no-store",
+        }),
+      ]);
+
+      if (!likedRes.ok || !savedRes.ok) return;
+
+      const likedBody = (await likedRes.json().catch(() => ({}))) as {
+        data?: { videoIds?: string[] };
+      };
+      const savedBody = (await savedRes.json().catch(() => ({}))) as {
+        data?: { videoIds?: string[] };
+      };
+
+      const likedMap: Record<string, boolean> = {};
+      const savedMap: Record<string, boolean> = {};
+      for (const id of likedBody?.data?.videoIds ?? []) {
+        if (id) likedMap[String(id)] = true;
+      }
+      for (const id of savedBody?.data?.videoIds ?? []) {
+        if (id) savedMap[String(id)] = true;
+      }
+
+      set({ liked: likedMap, saved: savedMap });
+    } catch {
+      // keep current local state on network failure
+    }
+  },
+  setFeedMode: (mode) => {
+    const { feedMode } = get();
+    if (feedMode === mode) return;
+    set({
+      feedMode: mode,
+      videos: [],
+      allVideos: [],
+      hasMoreVideos: true,
+      error: null,
+    });
+    void get().loadMoreVideos();
+  },
   loadMoreVideos: async () => {
-    const { hasMoreVideos, isLoading, videos } = get();
+    const { hasMoreVideos, isLoading, videos, feedMode } = get();
     if (!hasMoreVideos || isLoading) return;
 
     set({ isLoading: true });
     try {
       const skip = videos.length;
-      const response = await fetchVideos(FEED_PAGE_SIZE, skip);
+      const response =
+        feedMode === "following"
+          ? await fetchFollowingFeed(FEED_PAGE_SIZE, skip)
+          : await fetchTrendingFeed(FEED_PAGE_SIZE, skip);
       const raw = (response?.data?.videos || []) as any[];
       const total = typeof response?.total === "number" ? response.total : 0;
       const mapped = raw.map(mapApiVideoToUi).filter((v) => v.id);
@@ -371,14 +546,20 @@ export const useAppStore = create<AppState>((set, get) => ({
 }));
 
 export function useMyProfile() {
-  const profileEdits = useAppStore((state) => state.profileEdits[currentUserId]);
+  const profileEdits = useAppStore((state) => state.profileEdits[LOCAL_CURRENT_USER_ID]);
   const following = useAppStore((state) => state.following);
 
   return useMemo(() => {
-    const base = getUser(currentUserId);
     const edits = profileEdits ?? {};
     return {
-      ...base,
+      id: LOCAL_CURRENT_USER_ID,
+      username: edits.username || "me",
+      displayName: edits.displayName || "My Profile",
+      avatar: edits.avatar || buildAvatarFromUsername(edits.username || "me"),
+      bio: edits.bio || "",
+      verified: false,
+      followers: 0,
+      following: 0,
       ...edits,
       followingCount: Object.values(following).filter(Boolean).length,
     };

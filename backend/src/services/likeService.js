@@ -73,8 +73,14 @@ const getVideoEngagement = async (videoId, userId) => {
   return { likesCount, liked };
 };
 
+const getLikedVideoIdsByUser = async (userId) => {
+  const rows = await VideoLike.find({ user: userId }).select('video').lean();
+  return rows.map((row) => row.video.toString());
+};
+
 module.exports = {
   likeVideo,
   unlikeVideo,
   getVideoEngagement,
+  getLikedVideoIdsByUser,
 };

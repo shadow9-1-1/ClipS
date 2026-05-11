@@ -1,4 +1,4 @@
-import type { User, Video } from "@/data/mock";
+import type { User, Video } from "@/lib/types";
 import { buildAvatarFromUsername, buildPosterFromTitle, getFallbackVideoSrc } from "@/lib/placeholders";
 
 export type ApiUser = {
@@ -11,6 +11,7 @@ export type ApiUser = {
 };
 
 export type ApiVideo = {
+  id?: string;
   _id?: string;
   title?: string;
   description?: string;
@@ -58,7 +59,7 @@ export function mapApiVideoToUi(video: ApiVideo): Video {
   const tags = extractTags(video.description);
 
   return {
-    id: String(video._id || ""),
+    id: String(video.id || video._id || ""),
     userId: ownerId,
     caption,
     music: "Original audio",

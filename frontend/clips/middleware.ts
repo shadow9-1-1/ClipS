@@ -39,6 +39,11 @@ function isExpired(payload: SessionPayload): boolean {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
+  // Never gate rewritten backend API calls.
+  if (pathname.startsWith("/clips-api/")) {
+    return NextResponse.next();
+  }
+
   // Get auth token
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 
@@ -73,6 +78,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * - public folder
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|public).*)",
+    "/((?!api|clips-api|_next/static|_next/image|favicon.ico|public).*)",
   ],
 };

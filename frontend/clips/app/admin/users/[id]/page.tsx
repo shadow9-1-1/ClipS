@@ -5,7 +5,6 @@ import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { getApiPrefix } from "@/lib/api";
 import { getBearerAuthHeader } from "@/lib/auth-headers";
-import { videos as demoVideos, users as demoUsers } from "@/data/mock";
 import { Spinner } from "@/components/ui/Spinner";
 
 export default function AdminUserDetailPage() {
@@ -31,11 +30,8 @@ export default function AdminUserDetailPage() {
         if (!res.ok) throw new Error(`Status ${res.status}`);
         const json = await res.json();
         if (!cancelled) setData(json.data);
-      } catch (err) {
-        // fallback to demo
-        const demoUser = demoUsers.find(u => u.id === id) || demoUsers[0];
-        const demoUserVideos = demoVideos.filter(v => v.userId === demoUser.id);
-        if (!cancelled) setData({ user: demoUser, videos: demoUserVideos });
+      } catch {
+        if (!cancelled) setData({ user: null, videos: [] });
       } finally { if (!cancelled) setLoading(false); }
     }
     void load();
@@ -55,6 +51,7 @@ export default function AdminUserDetailPage() {
   }
 
   if (loading || !data) return <div className="flex items-center gap-3"><Spinner /><span>Loading…</span></div>;
+  if (!data.user) return <div className="text-sm text-zinc-500">User not found.</div>;
 
   return (
     <div className="flex flex-col gap-4">

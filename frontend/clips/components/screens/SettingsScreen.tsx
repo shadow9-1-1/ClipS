@@ -40,7 +40,7 @@ export function SettingsScreen() {
         <Row label="Auto-scroll" description="Move to the next clip automatically while browsing the feed.">
           <Switch checked={settings.autoScroll} onCheckedChange={() => toggle("autoScroll")} />
         </Row>
-        <Row label="Notifications" description="Receive mock alerts for likes, follows, and comments.">
+        <Row label="Notifications" description="Receive alerts for likes, follows, and comments.">
           <Switch checked={settings.notifications} onCheckedChange={() => toggle("notifications")} />
         </Row>
         <Row label="Private account" description="Hide your profile from people who do not follow you.">

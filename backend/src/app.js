@@ -14,7 +14,12 @@ const { swaggerSpec } = require('./config/swagger');
 
 const app = express();
 
-app.use(helmet());
+app.use(
+    helmet({
+        // Allow frontend (different port in dev) to embed media from API responses.
+        crossOriginResourcePolicy: { policy: 'cross-origin' },
+    })
+);
 
 // ============================================
 // CORS (Next.js on :3000 → API on :5000)

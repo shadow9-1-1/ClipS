@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Download, EllipsisVertical, Heart, Share2, Sparkles, ThumbsDown, Flag } from "lucide-react";
-import type { Video } from "@/data/mock";
+import type { Video } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";

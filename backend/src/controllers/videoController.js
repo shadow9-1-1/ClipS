@@ -67,6 +67,7 @@ const uploadBinary = async (req, res) => {
   const uploaded = await uploadVideoFile({
     ownerId: req.user._id,
     file: req.file,
+    payload: req.body,
   });
 
   res.status(201).json({

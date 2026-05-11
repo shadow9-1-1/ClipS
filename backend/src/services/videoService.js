@@ -216,7 +216,7 @@ const getTrendingFeed = async ({ limit, skip }) => {
   return { videos: videos.map(attachVideoAccessUrl), total: totalResult[0]?.total || 0 };
 };
 
-const uploadVideoFile = async ({ ownerId, file }) => {
+const uploadVideoFile = async ({ ownerId, file, payload = {} }) => {
   const { duration } = await validateVideoDuration(file);
 
   const uploaded = await uploadVideoObject({
@@ -228,9 +228,16 @@ const uploadVideoFile = async ({ ownerId, file }) => {
   let video;
 
   try {
+    const title =
+      typeof payload.title === 'string' && payload.title.trim()
+        ? payload.title.trim()
+        : file.originalname.replace(/\.[^/.]+$/, '');
+    const description =
+      typeof payload.description === 'string' ? payload.description.trim() : '';
+
     video = await Video.create({
-      title: file.originalname.replace(/\.[^/.]+$/, ''),
-      description: '',
+      title,
+      description,
       videoURL: '',
       videoObjectKey: uploaded.key,
       videoBucket: uploaded.bucket,

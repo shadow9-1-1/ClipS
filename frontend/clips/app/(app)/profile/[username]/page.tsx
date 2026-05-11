@@ -10,7 +10,7 @@ type PageProps = {
 export function generateMetadata({ params }: PageProps): Metadata {
   return {
     title: `@${params.username} | ClipS`,
-    description: `View @${params.username}'s mock ClipS profile and videos.`,
+    description: `View @${params.username}'s ClipS profile and videos.`,
   };
 }
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, X } from "lucide-react";
-import type { Video } from "@/data/mock";
+import type { Video } from "@/lib/types";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { DialogClose } from "@radix-ui/react-dialog";
 import { VideoCard } from "@/components/VideoCard";

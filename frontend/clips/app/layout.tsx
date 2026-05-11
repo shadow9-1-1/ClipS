@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "ClipS",
-  description: "ClipS is a short-video social platform with mock data.",
+  description: "ClipS is a short-video social platform.",
 };
 
 export const viewport: Viewport = {

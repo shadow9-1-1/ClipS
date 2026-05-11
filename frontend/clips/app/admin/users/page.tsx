@@ -7,7 +7,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { getApiPrefix } from "@/lib/api";
 import { getBearerAuthHeader } from "@/lib/auth-headers";
 import { Spinner } from "@/components/ui/Spinner";
-import { users as demoUsers } from "@/data/mock";
 
 type UserItem = {
   _id: string;
@@ -49,11 +48,11 @@ export default function AdminUsersPage() {
 
         if (!res.ok) throw new Error(`Status ${res.status}`);
         const json = await res.json();
-        if (!cancelled) setUsers(json.data.users ?? demoUsers.map(u => ({ _id: u.id, username: u.username, displayName: u.displayName, avatar: u.avatar })));
+        if (!cancelled) setUsers(json?.data?.users ?? []);
       } catch (err) {
         if (!cancelled) {
-          setUsers(demoUsers.map(u => ({ _id: u.id, username: u.username, displayName: u.displayName, avatar: u.avatar })));
-          setError(err instanceof Error ? `Demo data: ${err.message}` : 'Demo data');
+          setUsers([]);
+          setError(err instanceof Error ? err.message : 'Could not load users');
         }
       } finally { if (!cancelled) setLoading(false); }
     }

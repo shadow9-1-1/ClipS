@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { User } from "@/data/mock";
+import type { User } from "@/lib/types";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAppStore } from "@/lib/store";
