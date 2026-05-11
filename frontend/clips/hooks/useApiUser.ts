@@ -7,27 +7,40 @@ import { mapApiUserToUi } from "@/lib/backend-adapters";
 import { getApiPrefix } from "@/lib/api";
 import { getBearerAuthHeader } from "@/lib/auth-headers";
 
+const avatarUrlCache = new Map<string, string | null>();
+const avatarRequestCache = new Map<string, Promise<string | null>>();
+
 async function resolveAvatarUrlFromKey(avatarKey?: string | null): Promise<string | null> {
   const key = typeof avatarKey === "string" ? avatarKey.trim() : "";
   if (!key || /^https?:\/\//i.test(key)) return key || null;
+  if (avatarUrlCache.has(key)) return avatarUrlCache.get(key) ?? null;
+  if (avatarRequestCache.has(key)) return avatarRequestCache.get(key) ?? null;
 
-  const auth = getBearerAuthHeader();
-  const res = await fetch(`${getApiPrefix()}/v1/storage/presigned-url`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(("Authorization" in auth) ? auth : {}),
-    },
-    body: JSON.stringify({
-      key,
-      bucket: "avatars",
-    }),
-  });
-  if (!res.ok) return null;
+  const request = (async () => {
+    const auth = getBearerAuthHeader();
+    const res = await fetch(`${getApiPrefix()}/v1/storage/presigned-url`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(("Authorization" in auth) ? auth : {}),
+      },
+      body: JSON.stringify({
+        key,
+        bucket: "avatars",
+      }),
+    });
+    if (!res.ok) return null;
 
-  const body = (await res.json().catch(() => ({}))) as { data?: { accessUrl?: string } };
-  return body?.data?.accessUrl || null;
+    const body = (await res.json().catch(() => ({}))) as { data?: { accessUrl?: string } };
+    return body?.data?.accessUrl || null;
+  })();
+
+  avatarRequestCache.set(key, request);
+  const resolved = await request.catch(() => null);
+  avatarRequestCache.delete(key);
+  avatarUrlCache.set(key, resolved);
+  return resolved;
 }
 
 export function useApiUser(userId?: string) {

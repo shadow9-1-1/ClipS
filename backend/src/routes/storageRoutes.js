@@ -26,7 +26,6 @@ router.post(
 router.post(
 	'/presigned-url',
 	asyncHandler(protect),
-	uploadLimiter,
 	validateRequest(createTemporaryUrlSchema),
 	asyncHandler(createTemporaryUrl)
 );
