@@ -12,14 +12,12 @@ async function resolveAvatarUrlFromKey(avatarKey?: string | null): Promise<strin
   if (!key || /^https?:\/\//i.test(key)) return key || null;
 
   const auth = getBearerAuthHeader();
-  if (!("Authorization" in auth)) return null;
-
   const res = await fetch(`${getApiPrefix()}/v1/storage/presigned-url`, {
     method: "POST",
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...auth,
+      ...(("Authorization" in auth) ? auth : {}),
     },
     body: JSON.stringify({
       key,

@@ -13,14 +13,12 @@ export function HomeFeedScreen() {
   const notInterested = useAppStore((state) => state.notInterested);
   const feedMode = useAppStore((state) => state.feedMode);
   const setFeedMode = useAppStore((state) => state.setFeedMode);
-  const setLoading = useAppStore((state) => state.setLoading);
   const isLoading = useAppStore((state) => state.isLoading);
   const hasMoreVideos = useAppStore((state) => state.hasMoreVideos);
   const loadMoreVideos = useAppStore((state) => state.loadMoreVideos);
   const loadFollowingFromServer = useAppStore((state) => state.loadFollowingFromServer);
   const loadVideoInteractionsFromServer = useAppStore((state) => state.loadVideoInteractionsFromServer);
   const [activeTab, setActiveTab] = useState<"for-you" | "following">("for-you");
-  const [loading, setLocalLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const [isScrollSettled, setIsScrollSettled] = useState(true);
@@ -30,9 +28,14 @@ export function HomeFeedScreen() {
   const scrollIdleTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    setLoading(true);
+    // Always return to default home feed when landing on Home.
+    setActiveTab("for-you");
+    setFeedMode("for-you");
+  }, [setFeedMode]);
+
+  useEffect(() => {
     void loadMoreVideos();
-  }, [loadMoreVideos, setLoading]);
+  }, [loadMoreVideos]);
 
   useEffect(() => {
     setFeedMode(activeTab);
@@ -43,13 +46,6 @@ export function HomeFeedScreen() {
     void loadFollowingFromServer(authUser.id);
     void loadVideoInteractionsFromServer();
   }, [authUser?.id, loadFollowingFromServer, loadVideoInteractionsFromServer]);
-
-  useEffect(() => {
-    if (!isLoading) {
-      setLocalLoading(false);
-      setLoading(false);
-    }
-  }, [isLoading, setLoading]);
 
   const feedVideos = useMemo(() => {
     return videos.filter((video) => !notInterested[video.id]);
@@ -143,7 +139,7 @@ export function HomeFeedScreen() {
     };
   }, [hasMoreVideos, isFetchingNextPage, loadMoreVideos]);
 
-  if (loading) {
+  if (isLoading && feedVideos.length === 0) {
     return (
       <div className="space-y-4">
         <div className="glass sticky top-0 z-10 mb-3 rounded-[2rem] px-4 py-3">

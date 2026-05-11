@@ -77,6 +77,13 @@ export function ProfileScreen({ username }: ProfileScreenProps) {
   const isFollowingProfile = Boolean(profile?.id && followingMap[profile.id]);
 
   useEffect(() => {
+    // Keep your own profile on the canonical route after refresh/navigation.
+    if (profileRef && ownProfile) {
+      router.replace("/profile");
+    }
+  }, [ownProfile, profileRef, router]);
+
+  useEffect(() => {
     if (!authUser?.id) return;
     void loadFollowingFromServer(authUser.id);
     void loadVideoInteractionsFromServer();
