@@ -47,6 +47,53 @@ export function EditProfileScreen() {
       reader.readAsDataURL(file);
     });
 
+  const prepareAvatarUpload = async (file: File) => {
+    const objectUrl = URL.createObjectURL(file);
+    try {
+      const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error("Could not process image file."));
+        img.src = objectUrl;
+      });
+
+      const maxDimension = 720;
+      const scale = Math.min(1, maxDimension / Math.max(image.width || 1, image.height || 1));
+      const width = Math.max(1, Math.round((image.width || 1) * scale));
+      const height = Math.max(1, Math.round((image.height || 1) * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const context = canvas.getContext("2d");
+      if (!context) {
+        throw new Error("Could not process image file.");
+      }
+
+      context.drawImage(image, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+      const base64Data = dataUrl.split(",")[1] || "";
+      if (!base64Data) {
+        throw new Error("Could not process image file.");
+      }
+
+      return {
+        filename: (file.name || "avatar").replace(/\.[^/.]+$/, "") + ".jpg",
+        base64Data,
+        contentType: "image/jpeg",
+      };
+    } catch {
+      const base64Data = await fileToBase64(file);
+      return {
+        filename: file.name || "avatar.jpg",
+        base64Data,
+        contentType: file.type || "image/jpeg",
+      };
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  };
+
   const submit = async () => {
     const auth = getBearerAuthHeader();
     if (!("Authorization" in auth)) {
@@ -59,7 +106,15 @@ export function EditProfileScreen() {
       let nextAvatarKey: string | undefined;
       let nextAvatarPreview = avatarPreview;
       if (avatarFile && authUser?.id) {
-        const base64Data = await fileToBase64(avatarFile);
+        const preparedAvatar = await prepareAvatarUpload(avatarFile);
+        if (preparedAvatar.base64Data.length > 8_000_000) {
+          setError({
+            title: "Avatar upload failed",
+            message: "Image is too large. Please choose a smaller picture.",
+          });
+          setSaving(false);
+          return;
+        }
         const uploadRes = await fetch(`${getApiPrefix()}/v1/storage/test-upload`, {
           method: "POST",
           credentials: "include",
@@ -68,9 +123,9 @@ export function EditProfileScreen() {
             ...auth,
           },
           body: JSON.stringify({
-            filename: avatarFile.name || "avatar.jpg",
-            base64Data,
-            contentType: avatarFile.type || "image/jpeg",
+            filename: preparedAvatar.filename,
+            base64Data: preparedAvatar.base64Data,
+            contentType: preparedAvatar.contentType,
             bucket: "avatars",
             keyPrefix: `avatars/${authUser.id}`,
           }),

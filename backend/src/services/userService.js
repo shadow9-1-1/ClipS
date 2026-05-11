@@ -42,7 +42,7 @@ const resolveAvatarUrl = (avatarKey) => {
   if (!raw) return '';
   if (/^https?:\/\//i.test(raw)) return raw;
   try {
-    const bucket = process.env.S3_AVATAR_BUCKET || process.env.S3_BUCKET;
+    const bucket = process.env.S3_AVATAR_BUCKET || 'avatars';
     const data = generateTemporaryAccessUrl({ bucket, key: raw });
     return data?.accessUrl || '';
   } catch {
