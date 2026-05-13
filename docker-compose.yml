@@ -225,6 +225,10 @@ services:
       - "80:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # Static asset offloading — Nginx serves these directly from disk
+      - ./frontend/clips/public:/static/public:ro
+      - ./frontend/clips/.next/static:/static/next:ro
+      - nginx-cache:/var/cache/nginx/static
     networks:
       - clips-network
     healthcheck:
@@ -238,6 +242,8 @@ volumes:
   redis-data:
     driver: local
   minio-data:
+    driver: local
+  nginx-cache:
     driver: local
 
 networks:
