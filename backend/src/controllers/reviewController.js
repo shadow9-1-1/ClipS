@@ -15,6 +15,7 @@ const createReview = async (req, res) => {
       review: result.review,
       averageRating: result.stats.averageRating,
       ratingCount: result.stats.ratingCount,
+      trendingScore: result.trendingScore,
     },
   });
 };

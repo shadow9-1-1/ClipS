@@ -71,7 +71,7 @@ const createVideoReview = async ({ videoId, userId, rating, comment }) => {
   }
 
   // Update trending score after review is created or updated
-  await updateTrendingScore(videoId);
+  const updatedScore = await updateTrendingScore(videoId);
 
   if (!hadComment && review.comment) {
     await sendNewCommentNotification({
@@ -85,6 +85,7 @@ const createVideoReview = async ({ videoId, userId, rating, comment }) => {
   return {
     created,
     stats: await getVideoRatingStats(video._id),
+    trendingScore: updatedScore,
     review: {
       id: review._id.toString(),
       rating: review.rating,
