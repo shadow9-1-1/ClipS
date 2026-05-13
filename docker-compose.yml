@@ -92,6 +92,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: development
     container_name: clips-backend
     restart: unless-stopped
     depends_on:
@@ -160,6 +161,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: development
     container_name: clips-worker
     restart: unless-stopped
     command: npm run worker
@@ -204,6 +206,7 @@ services:
     build:
       context: ./frontend/clips
       dockerfile: Dockerfile
+      target: development
     container_name: clips-frontend
     restart: unless-stopped
     depends_on:
