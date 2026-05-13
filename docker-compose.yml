@@ -8,8 +8,8 @@ services:
     container_name: clips-redis
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD:-redispassword}
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
     volumes:
       - redis-data:/data
     networks:
@@ -29,9 +29,9 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
-    ports:
-      - "9000:9000"
-      - "9001:9001"
+    expose:
+      - "9000"
+      - "9001"
     volumes:
       - minio-data:/data
     networks:
@@ -116,8 +116,8 @@ services:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
     
-    ports:
-      - "5000:5000"
+    expose:
+      - "5000"
     
     volumes:
       - ./backend:/app
@@ -194,8 +194,8 @@ services:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost/api}
       INTERNAL_API_URL: http://backend:5000
     
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     
     volumes:
       - ./frontend/clips:/app
