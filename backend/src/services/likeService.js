@@ -2,6 +2,7 @@ const Video = require('../models/Video');
 const VideoLike = require('../models/VideoLike');
 const { sendNewLikeNotification } = require('./notificationService');
 const { getSocketServer } = require('../sockets');
+const { updateTrendingScore } = require('./videoService');
 
 const likeVideo = async ({ videoId, userId, likerUsername }) => {
   const video = await Video.findById(videoId).select('_id owner title');
@@ -17,6 +18,9 @@ const likeVideo = async ({ videoId, userId, likerUsername }) => {
       user: userId,
       video: videoId,
     });
+
+    // Update trending score after like is added
+    await updateTrendingScore(videoId);
 
     await sendNewLikeNotification({
       recipientId: video.owner,
@@ -56,6 +60,11 @@ const unlikeVideo = async ({ videoId, userId }) => {
     user: userId,
     video: videoId,
   });
+
+  // Update trending score after like is removed
+  if (like) {
+    await updateTrendingScore(videoId);
+  }
 
   return Boolean(like);
 };

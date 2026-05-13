@@ -48,6 +48,11 @@ const videoSchema = new mongoose.Schema(
       enum: ['public', 'private', 'flagged'],
       default: 'public',
     },
+    trendingScore: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
   },
   { timestamps: true }
 );

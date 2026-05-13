@@ -11,6 +11,69 @@ const reviewCollection = Review.collection.name;
 const videoLikeCollection = VideoLike.collection.name;
 const userCollection = 'users';
 
+/**
+ * Calculate trending score for a video
+ * Formula: (Likes × 10) + (Avg_Rating × 2) + Freshness_Bonus
+ * Freshness_Bonus: Higher for newer videos, decreases over time
+ * - Videos less than 7 days old: (7 - days) × 5
+ * - Videos 7+ days old: 0
+ */
+const calculateTrendingScore = async (videoId) => {
+  try {
+    // Get likes count
+    const likesCount = await VideoLike.countDocuments({ video: videoId });
+
+    // Get average rating
+    const ratingStats = await Review.aggregate([
+      { $match: { video: videoId } },
+      {
+        $group: {
+          _id: '$video',
+          avgRating: { $avg: '$rating' },
+        },
+      },
+    ]);
+
+    const avgRating = ratingStats[0]?.avgRating || 0;
+
+    // Get video to calculate freshness bonus
+    const video = await Video.findById(videoId).select('createdAt').lean();
+    if (!video) {
+      return 0;
+    }
+
+    // Calculate freshness bonus (7-day window)
+    const FRESHNESS_WINDOW_DAYS = 7;
+    const FRESHNESS_BONUS_MULTIPLIER = 5;
+    const ageInDays = (Date.now() - new Date(video.createdAt).getTime()) / (1000 * 60 * 60 * 24);
+    const freshnessBonus = Math.max(
+      0,
+      (FRESHNESS_WINDOW_DAYS - ageInDays) * FRESHNESS_BONUS_MULTIPLIER
+    );
+
+    // Calculate total score: (Likes × 10) + (Avg_Rating × 2) + Freshness_Bonus
+    const trendingScore = (likesCount * 10) + (avgRating * 2) + freshnessBonus;
+
+    return Math.max(0, trendingScore);
+  } catch (error) {
+    console.error('Error calculating trending score:', error.message);
+    return 0;
+  }
+};
+
+/**
+ * Update trending score for a video in the database
+ */
+const updateTrendingScore = async (videoId) => {
+  try {
+    const score = await calculateTrendingScore(videoId);
+    await Video.findByIdAndUpdate(videoId, { trendingScore: score });
+    return score;
+  } catch (error) {
+    console.error('Error updating trending score:', error.message);
+  }
+};
+
 const buildFeedProjectionPipeline = ({ matchStage, recentSince }) => [
     { $match: matchStage },
     {
@@ -81,6 +144,7 @@ const buildFeedProjectionPipeline = ({ matchStage, recentSince }) => [
             duration: 1,
             viewsCount: 1,
             status: 1,
+            trendingScore: 1,
             createdAt: 1,
             updatedAt: 1,
             averageRating: 1,
@@ -129,6 +193,7 @@ const createVideo = async(ownerId, payload) => {
         duration: payload.duration,
         status: payload.status,
         owner: ownerId,
+        trendingScore: 0, // Initialize with 0
     });
 
     if (video.status === 'public') {
@@ -198,8 +263,7 @@ const getTrendingFeed = async({ limit, skip }) => {
             }),
             {
                 $sort: {
-                    averageRating: -1,
-                    recentEngagement: -1,
+                    trendingScore: -1,
                     createdAt: -1,
                 },
             },
@@ -240,6 +304,7 @@ const uploadVideoFile = async({ ownerId, file, payload = {} }) => {
             duration,
             status: 'public',
             owner: ownerId,
+            trendingScore: 0, // Initialize with 0
         });
     } catch (dbErr) {
         try {
@@ -354,4 +419,6 @@ module.exports = {
     uploadVideoFile,
     updateVideo,
     deleteVideo,
+    calculateTrendingScore,
+    updateTrendingScore,
 };

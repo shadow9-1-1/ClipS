@@ -1,6 +1,7 @@
 const Review = require('../models/Review');
 const Video = require('../models/Video');
 const { sendNewCommentNotification } = require('./notificationService');
+const { updateTrendingScore } = require('./videoService');
 
 const getVideoRatingStats = async (videoId) => {
   const stats = await Review.aggregate([
@@ -68,6 +69,9 @@ const createVideoReview = async ({ videoId, userId, rating, comment }) => {
       }
     }
   }
+
+  // Update trending score after review is created or updated
+  await updateTrendingScore(videoId);
 
   if (!hadComment && review.comment) {
     await sendNewCommentNotification({
