@@ -7,10 +7,24 @@ const { sendNewVideoFromFollowedUserNotification } = require('./notificationServ
 const { uploadVideoObject, deleteObject, generateTemporaryAccessUrl } = require('./storageService');
 const { validateVideoDuration } = require('./videoValidationService');
 const { addVideoMetadataJob } = require('../queues');
+const { getRedisClient } = require('../config/redis');
 
 const reviewCollection = Review.collection.name;
 const videoLikeCollection = VideoLike.collection.name;
 const userCollection = 'users';
+
+const invalidateTrendingCache = async () => {
+  try {
+    const client = getRedisClient();
+    if (!client) return;
+    const keys = await client.keys('feed:trending:*');
+    if (keys.length > 0) {
+      await client.del(keys);
+    }
+  } catch (err) {
+    console.error('Failed to invalidate trending cache:', err.message);
+  }
+};
 
 const calculateTrendingScore = async (videoId) => {
   try {
@@ -62,6 +76,7 @@ const updateTrendingScore = async (videoId) => {
   try {
     const score = await calculateTrendingScore(videoId);
     await Video.findByIdAndUpdate(videoId, { trendingScore: score });
+    await invalidateTrendingCache();
     return score;
   } catch (error) {
     console.error('Error updating trending score:', error.message);
@@ -195,6 +210,7 @@ const createVideo = async(ownerId, payload) => {
             creatorId: ownerId,
             videoTitle: video.title,
         });
+        await invalidateTrendingCache();
     }
 
     return video;
@@ -247,6 +263,20 @@ const getFollowingFeed = async({ viewerId, limit, skip }) => {
 };
 
 const getTrendingFeed = async({ limit, skip }) => {
+    const cacheKey = `feed:trending:limit:${limit}:skip:${skip}`;
+    const client = getRedisClient();
+    
+    if (client) {
+        try {
+            const cachedData = await client.get(cacheKey);
+            if (cachedData) {
+                return JSON.parse(cachedData);
+            }
+        } catch (err) {
+            console.error('Redis get error:', err.message);
+        }
+    }
+
     const recentSince = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
     const [videos, totalResult] = await Promise.all([
@@ -267,7 +297,17 @@ const getTrendingFeed = async({ limit, skip }) => {
         Video.aggregate([{ $match: { status: 'public' } }, { $count: 'total' }]),
     ]);
 
-    return { videos: videos.map(attachVideoAccessUrl), total: totalResult[0]?.total || 0 };
+    const result = { videos: videos.map(attachVideoAccessUrl), total: totalResult[0]?.total || 0 };
+
+    if (client) {
+        try {
+            await client.setEx(cacheKey, 600, JSON.stringify(result));
+        } catch (err) {
+            console.error('Redis setEx error:', err.message);
+        }
+    }
+
+    return result;
 };
 
 const getPersonalizedFeed = async({ viewerId, limit, skip }) => {
@@ -451,6 +491,7 @@ const updateVideo = async(videoId, requesterId, payload) => {
     if (typeof payload.description !== 'undefined') video.description = payload.description;
 
     await video.save();
+    await invalidateTrendingCache();
 
     return video;
 };
@@ -504,6 +545,7 @@ const deleteVideo = async(videoId, requesterId, requesterRole) => {
     }
 
     await video.deleteOne();
+    await invalidateTrendingCache();
 };
 
 module.exports = {
