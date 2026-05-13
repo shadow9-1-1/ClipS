@@ -1,6 +1,6 @@
 const express = require('express');
 
-const { create, list, getById, followingFeed, trendingFeed, uploadBinary, update, remove } = require('../controllers/videoController');
+const { create, list, getById, followingFeed, trendingFeed, personalizedFeed, uploadBinary, update, remove } = require('../controllers/videoController');
 const { createReview, listReviews } = require('../controllers/reviewController');
 const { like, unlike, getEngagement } = require('../controllers/likeController');
 const { save, unsave } = require('../controllers/saveController');
@@ -31,6 +31,7 @@ router.post(
 );
 router.get('/', validateRequest(getVideosSchema), asyncHandler(list));
 router.get('/feed/following', asyncHandler(protect), validateRequest(getFeedSchema), asyncHandler(followingFeed));
+router.get('/feed/personalized', asyncHandler(protect), validateRequest(getFeedSchema), asyncHandler(personalizedFeed));
 router.get('/feed/trending', validateRequest(getFeedSchema), asyncHandler(trendingFeed));
 router.get('/:id/engagement', optionalAuth, validateRequest(videoIdParamSchema), asyncHandler(getEngagement));
 router.get('/:id/reviews', validateRequest(videoIdParamSchema), asyncHandler(listReviews));

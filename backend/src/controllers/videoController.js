@@ -4,6 +4,7 @@ const {
   getPublicVideoById,
   getFollowingFeed,
   getTrendingFeed,
+  getPersonalizedFeed,
   uploadVideoFile,
   updateVideo,
   deleteVideo,
@@ -59,6 +60,23 @@ const trendingFeed = async (req, res) => {
     feedType: 'trending',
     results: videos.length,
     total,
+    data: { videos },
+  });
+};
+
+const personalizedFeed = async (req, res) => {
+  const { videos, total, breakdown } = await getPersonalizedFeed({
+    viewerId: req.user._id,
+    limit: req.query.limit,
+    skip: req.query.skip,
+  });
+
+  res.status(200).json({
+    status: 'success',
+    feedType: 'personalized',
+    results: videos.length,
+    total,
+    breakdown,
     data: { videos },
   });
 };
@@ -119,6 +137,7 @@ module.exports = {
   getById,
   followingFeed,
   trendingFeed,
+  personalizedFeed,
   uploadBinary,
   update,
   remove,

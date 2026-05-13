@@ -269,6 +269,100 @@ const getTrendingFeed = async({ limit, skip }) => {
     return { videos: videos.map(attachVideoAccessUrl), total: totalResult[0]?.total || 0 };
 };
 
+const getPersonalizedFeed = async({ viewerId, limit, skip }) => {
+    const recentSince = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const followerObjectId = new mongoose.Types.ObjectId(viewerId);
+
+    // Get followed user IDs
+    const followedRows = await Follow.aggregate([
+        { $match: { followerId: followerObjectId } },
+        { $group: { _id: null, followedIds: { $addToSet: '$followingId' } } },
+    ]);
+
+    const followedIds = followedRows[0]?.followedIds || [];
+
+    // Fetch videos from followed users (prioritized)
+    let followingVideos = [];
+    let followingTotal = 0;
+    
+    if (followedIds.length > 0) {
+        const [following, followingCountResult] = await Promise.all([
+            Video.aggregate([
+                ...buildFeedProjectionPipeline({
+                    matchStage: { status: 'public', owner: { $in: followedIds } },
+                    recentSince,
+                }),
+                {
+                    $sort: {
+                        trendingScore: -1,
+                        createdAt: -1,
+                    },
+                },
+            ]),
+            Video.aggregate([
+                { $match: { status: 'public', owner: { $in: followedIds } } },
+                { $count: 'total' },
+            ]),
+        ]);
+        
+        followingVideos = following;
+        followingTotal = followingCountResult[0]?.total || 0;
+    }
+
+    // Determine if we need trending videos to fill the remaining slots
+    const remainingSlots = Math.max(0, limit - followingVideos.length);
+    let trendingVideos = [];
+    let trendingTotal = 0;
+
+    if (remainingSlots > 0) {
+        // Get trending videos (excluding followed users)
+        const [trending, trendingCountResult] = await Promise.all([
+            Video.aggregate([
+                ...buildFeedProjectionPipeline({
+                    matchStage: { 
+                        status: 'public', 
+                        owner: { $nin: followedIds } 
+                    },
+                    recentSince,
+                }),
+                {
+                    $sort: {
+                        trendingScore: -1,
+                        createdAt: -1,
+                    },
+                },
+                { $skip: skip },
+                { $limit: remainingSlots },
+            ]),
+            Video.aggregate([
+                { $match: { status: 'public', owner: { $nin: followedIds } } },
+                { $count: 'total' },
+            ]),
+        ]);
+        
+        trendingVideos = trending;
+        trendingTotal = trendingCountResult[0]?.total || 0;
+    }
+
+    // Combine: followed users first, then trending
+    const combinedVideos = [
+        ...followingVideos.slice(skip, skip + limit),
+        ...trendingVideos,
+    ].slice(0, limit);
+
+    // Total is sum of both, but respects pagination
+    const total = followingTotal + trendingTotal;
+
+    return { 
+        videos: combinedVideos.map(attachVideoAccessUrl), 
+        total,
+        breakdown: {
+            followingCount: followingVideos.length,
+            trendingCount: trendingVideos.length,
+        },
+    };
+};
+
 const uploadVideoFile = async({ ownerId, file, payload = {} }) => {
     const { duration } = await validateVideoDuration(file);
 
@@ -409,6 +503,7 @@ module.exports = {
     getPublicVideoById,
     getFollowingFeed,
     getTrendingFeed,
+    getPersonalizedFeed,
     uploadVideoFile,
     updateVideo,
     deleteVideo,
