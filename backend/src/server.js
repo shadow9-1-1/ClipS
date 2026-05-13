@@ -22,6 +22,7 @@ const startServer = async () => {
   try {
     await connectDB();
     await initializeRedis();
+    require('./workers'); // Initialize BullMQ workers
     const server = http.createServer(app);
     createSocketServer(server);
     server.listen(PORT, () => {

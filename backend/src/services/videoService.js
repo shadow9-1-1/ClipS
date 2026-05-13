@@ -6,6 +6,7 @@ const VideoLike = require('../models/VideoLike');
 const { sendNewVideoFromFollowedUserNotification } = require('./notificationService');
 const { uploadVideoObject, deleteObject, generateTemporaryAccessUrl } = require('./storageService');
 const { validateVideoDuration } = require('./videoValidationService');
+const { addVideoMetadataJob } = require('../queues');
 
 const reviewCollection = Review.collection.name;
 const videoLikeCollection = VideoLike.collection.name;
@@ -414,6 +415,14 @@ const uploadVideoFile = async({ ownerId, file, payload = {} }) => {
             });
         } catch (notificationErr) {
             console.error('Failed to send new video notification:', notificationErr.message);
+        }
+    }
+
+    if (video) {
+        try {
+            await addVideoMetadataJob({ videoId: video._id.toString(), fileKey: uploaded.key });
+        } catch (jobErr) {
+            console.error('Failed to add video metadata job:', jobErr.message);
         }
     }
 

@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const Follow = require('../models/Follow');
-const { sendEmail } = require('./emailService');
+const { addEmailJob } = require('../queues');
 const {
   newFollowerTemplate,
   newCommentTemplate,
@@ -41,7 +41,7 @@ const sendIfAllowed = async ({ recipient, preferenceKey, template }) => {
 
 const trySend = async (mailData) => {
   try {
-    await sendEmail(mailData);
+    await addEmailJob(mailData);
   } catch (err) {
     console.error('Failed to send engagement email:', err.message);
   }
