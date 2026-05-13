@@ -2,7 +2,9 @@ const Video = require('../models/Video');
 const VideoLike = require('../models/VideoLike');
 const { sendNewLikeNotification } = require('./notificationService');
 const { getSocketServer } = require('../sockets');
-const { updateTrendingScore } = require('./videoService');
+
+// Like weight in trending score formula: Likes × 10
+const LIKE_SCORE_WEIGHT = 10;
 
 const likeVideo = async ({ videoId, userId, likerUsername }) => {
   const video = await Video.findById(videoId).select('_id owner title');
@@ -19,8 +21,12 @@ const likeVideo = async ({ videoId, userId, likerUsername }) => {
       video: videoId,
     });
 
-    // Update trending score after like is added
-    await updateTrendingScore(videoId);
+    // Increment trending score by LIKE_SCORE_WEIGHT (10) when like is added
+    await Video.findByIdAndUpdate(
+      videoId,
+      { $inc: { trendingScore: LIKE_SCORE_WEIGHT } },
+      { new: true }
+    );
 
     await sendNewLikeNotification({
       recipientId: video.owner,
@@ -61,9 +67,13 @@ const unlikeVideo = async ({ videoId, userId }) => {
     video: videoId,
   });
 
-  // Update trending score after like is removed
+  // Decrement trending score by LIKE_SCORE_WEIGHT (10) when like is removed
   if (like) {
-    await updateTrendingScore(videoId);
+    await Video.findByIdAndUpdate(
+      videoId,
+      { $inc: { trendingScore: -LIKE_SCORE_WEIGHT } },
+      { new: true }
+    );
   }
 
   return Boolean(like);

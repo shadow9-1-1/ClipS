@@ -11,13 +11,6 @@ const reviewCollection = Review.collection.name;
 const videoLikeCollection = VideoLike.collection.name;
 const userCollection = 'users';
 
-/**
- * Calculate trending score for a video
- * Formula: (Likes × 10) + (Avg_Rating × 2) + Freshness_Bonus
- * Freshness_Bonus: Higher for newer videos, decreases over time
- * - Videos less than 7 days old: (7 - days) × 5
- * - Videos 7+ days old: 0
- */
 const calculateTrendingScore = async (videoId) => {
   try {
     // Get likes count
