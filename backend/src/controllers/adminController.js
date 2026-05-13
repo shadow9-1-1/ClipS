@@ -22,10 +22,11 @@ const getAdminOverview = async(req, res) => {
     });
 };
 
-const getAdminHealth = (req, res) => {
+const getAdminHealth = async (req, res) => {
+    const healthStatus = await getAdminHealthStatus();
     res.status(200).json({
         status: 'success',
-        data: getAdminHealthStatus(),
+        data: healthStatus,
     });
 };
 

@@ -5,6 +5,7 @@ dotenv.config();
 const http = require('http');
 const app = require('./app');
 const connectDB = require('./config/db');
+const { initializeRedis } = require('./config/redis');
 const { createSocketServer } = require('./sockets');
 
 const PORT = process.env.PORT || 5000;
@@ -20,6 +21,7 @@ process.on('uncaughtException', (err) => {
 const startServer = async () => {
   try {
     await connectDB();
+    await initializeRedis();
     const server = http.createServer(app);
     createSocketServer(server);
     server.listen(PORT, () => {
