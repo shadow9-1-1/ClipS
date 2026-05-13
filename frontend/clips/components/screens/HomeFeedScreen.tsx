@@ -19,7 +19,7 @@ export function HomeFeedScreen() {
   const loadMoreVideos = useAppStore((state) => state.loadMoreVideos);
   const loadFollowingFromServer = useAppStore((state) => state.loadFollowingFromServer);
   const loadVideoInteractionsFromServer = useAppStore((state) => state.loadVideoInteractionsFromServer);
-  const [activeTab, setActiveTab] = useState<"for-you" | "following">("for-you");
+  const [activeTab, setActiveTab] = useState<"for-you" | "following" | "personalized">("for-you");
   const [activeIndex, setActiveIndex] = useState(0);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const [isScrollSettled, setIsScrollSettled] = useState(true);
@@ -185,10 +185,11 @@ export function HomeFeedScreen() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
       <div className="glass sticky top-0 z-10 rounded-[2rem] px-4 py-3">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "for-you" | "following")}>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "for-you" | "following" | "personalized")}>
           <TabsList className="w-full">
             <TabsTrigger value="for-you" className="flex-1">For You</TabsTrigger>
             <TabsTrigger value="following" className="flex-1">Following</TabsTrigger>
+            <TabsTrigger value="personalized" className="flex-1">Personalized</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>

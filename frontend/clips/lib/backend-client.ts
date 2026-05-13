@@ -51,6 +51,14 @@ export async function fetchTrendingFeed(limit: number, skip: number) {
   );
 }
 
+export async function fetchPersonalizedFeed(limit: number, skip: number) {
+  return request<{ data?: { videos?: unknown[] }; total?: number }>(
+    `/v1/videos/feed/personalized?limit=${limit}&skip=${skip}`,
+    {},
+    true
+  );
+}
+
 export async function fetchUserById(id: string) {
   return request<{ data?: { user?: unknown } }>(`/v1/users/${id}`);
 }

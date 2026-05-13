@@ -8,6 +8,7 @@ import { getBearerAuthHeader } from "@/lib/auth-headers";
 import {
   fetchFollowingFeed,
   fetchTrendingFeed,
+  fetchPersonalizedFeed,
   createPresignedUrl,
 } from "@/lib/backend-client";
 import { mapApiVideoToUi } from "@/lib/backend-adapters";
@@ -55,7 +56,7 @@ export type AppState = {
   reported: Record<string, ReportRecord>;
   profileEdits: Record<string, ProfileEdits>;
   settings: Settings;
-  feedMode: "for-you" | "following";
+  feedMode: "for-you" | "following" | "personalized";
   isAuthed: boolean;
   isLoading: boolean;
   hasMoreVideos: boolean;
@@ -75,7 +76,7 @@ export type AppState = {
   updateSettings: (settings: Partial<Settings>) => void;
   loadFollowingFromServer: (viewerId: string) => Promise<void>;
   loadVideoInteractionsFromServer: () => Promise<void>;
-  setFeedMode: (mode: "for-you" | "following") => void;
+  setFeedMode: (mode: "for-you" | "following" | "personalized") => void;
   loadMoreVideos: () => void;
   setAuthed: (isAuthed: boolean) => void;
   setLoading: (isLoading: boolean) => void;
@@ -566,6 +567,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       const response =
         feedMode === "following"
           ? await fetchFollowingFeed(FEED_PAGE_SIZE, skip)
+          : feedMode === "personalized"
+          ? await fetchPersonalizedFeed(FEED_PAGE_SIZE, skip)
           : await fetchTrendingFeed(FEED_PAGE_SIZE, skip);
       const raw = (response?.data?.videos || []) as any[];
       const total = typeof response?.total === "number" ? response.total : 0;
