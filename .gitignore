@@ -1,1 +1,4 @@
 .env
+
+# SSL certificates — generated locally, never commit private keys
+ssl/

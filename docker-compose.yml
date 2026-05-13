@@ -223,8 +223,11 @@ services:
       - minio
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # SSL certificates (generate with: .\generate-certs.ps1)
+      - ./ssl:/etc/nginx/ssl:ro
       # Static asset offloading — Nginx serves these directly from disk
       - ./frontend/clips/public:/static/public:ro
       - ./frontend/clips/.next/static:/static/next:ro
@@ -232,7 +235,7 @@ services:
     networks:
       - clips-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--no-check-certificate", "--spider", "https://localhost/"]
       interval: 30s
       timeout: 10s
       retries: 3
