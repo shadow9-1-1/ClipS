@@ -155,6 +155,50 @@ services:
       retries: 3
       start_period: 10s
 
+  # Dedicated Background Worker
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: clips-worker
+    restart: unless-stopped
+    command: npm run worker
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      # Node Environment
+      NODE_ENV: ${NODE_ENV:-development}
+      
+      # Database
+      MONGO_URI: mongodb://${MONGO_INITDB_ROOT_USERNAME:-admin}:${MONGO_INITDB_ROOT_PASSWORD:-password}@mongodb:27017/clips?authSource=admin
+      
+      # Redis
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redispassword}@redis:6379
+      
+      # MinIO/S3
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-minioadmin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-videos}
+      AWS_S3_REGION: ${AWS_S3_REGION:-us-east-1}
+      AWS_S3_ENDPOINT: http://minio:9000
+      
+      # Email Service
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
+      EMAIL_SERVICE: ${EMAIL_SERVICE:-gmail}
+    
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    
+    networks:
+      - clips-network
+
   # Next.js Frontend
   frontend:
     build:
