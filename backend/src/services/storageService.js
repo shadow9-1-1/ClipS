@@ -86,7 +86,6 @@ const generateTemporaryAccessUrl = ({ bucket, key, expiresIn }) => {
     expiresAt,
   });
 
-  const base = storageConfig.backendBaseUrl.replace(/\/$/, '');
   const query = new URLSearchParams({
     bucket: targetBucket,
     key,
@@ -94,8 +93,13 @@ const generateTemporaryAccessUrl = ({ bucket, key, expiresIn }) => {
     signature,
   });
 
+  // Use a relative path so the URL works from any origin:
+  // - Browser: nginx proxies /api/ → backend (same-origin, no CORS)
+  // - SSR/server: prepend INTERNAL_API_URL when needed for absolute calls
+  const accessUrl = `/api/v1/storage/access?${query.toString()}`;
+
   return {
-    accessUrl: `${base}/api/v1/storage/access?${query.toString()}`,
+    accessUrl,
     expiresIn: validFor,
     expiresAt,
   };

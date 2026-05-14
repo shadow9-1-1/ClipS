@@ -14,6 +14,9 @@ const { swaggerSpec } = require('./config/swagger');
 
 const app = express();
 
+// Trust the first proxy hop (nginx) so X-Forwarded-For is used for real client IPs
+app.set('trust proxy', 1);
+
 app.use(
     helmet({
         // Allow frontend (different port in dev) to embed media from API responses.

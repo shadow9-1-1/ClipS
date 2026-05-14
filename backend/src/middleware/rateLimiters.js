@@ -5,6 +5,8 @@ const apiLimiter = rateLimit({
     max: 1200,
     standardHeaders: true,
     legacyHeaders: false,
+    // nginx is our trusted proxy — suppress ERR_ERL_UNEXPECTED_X_FORWARDED_FOR
+    validate: { trustProxy: false },
     skip: (req) => {
         // Do not count high-frequency media/read endpoints against the generic API budget.
         if (req.method !== 'GET') return false;
@@ -29,6 +31,7 @@ const uploadLimiter = rateLimit({
     max: 200,
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { trustProxy: false },
     message: {
         status: 'error',
         message: 'Too many uploads, please try again later.',
