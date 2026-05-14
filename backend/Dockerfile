@@ -1,5 +1,5 @@
 # Base stage
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 WORKDIR /app
 COPY package*.json ./
 
@@ -17,7 +17,7 @@ RUN npm ci
 COPY . .
 
 # Production stage
-FROM node:18-alpine AS production
+FROM node:20-alpine AS production
 WORKDIR /app
 ENV NODE_ENV=production
 
