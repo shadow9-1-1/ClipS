@@ -7,7 +7,7 @@ import type { Video } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 let globallyPlayingVideo: HTMLVideoElement | null = null;
-let globallyMuted = true;
+let globallyMuted = false;
 
 type VideoPlayerProps = {
   video: Video;
@@ -339,7 +339,7 @@ export function VideoPlayer({ video, active, onDoubleTapLike }: VideoPlayerProps
           }}
           className={cn(
             "pointer-events-auto flex h-20 w-20 items-center justify-center rounded-full border border-white/15 bg-black/25 text-white/90 shadow-soft backdrop-blur-sm transition",
-            isPlaying ? "opacity-80" : "opacity-100"
+            isPlaying ? "opacity-0" : "opacity-100"
           )}
           aria-label={isPlaying ? "Pause video" : "Play video"}
         >

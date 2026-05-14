@@ -104,7 +104,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   reported: {},
   profileEdits: {},
   settings: {
-    autoScroll: true,
+    autoScroll: false,
     notifications: true,
     privateAccount: false,
     reduceData: false,
