@@ -100,8 +100,8 @@ services:
       PORT: 5000
       HOST: 0.0.0.0
       
-      # CORS
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000,http://localhost}
+      # CORS — https://localhost is the browser origin when nginx serves HTTPS
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://localhost,http://localhost:3000,http://localhost}
       
       # JWT
       JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this}
@@ -191,7 +191,9 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
       
       # API Configuration
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost/api}
+      # Empty = browser calls /api through nginx same-origin (no CORS needed)
+      NEXT_PUBLIC_API_URL: ""
+      # Internal Docker network: Next.js SSR calls go directly to backend container
       INTERNAL_API_URL: http://backend:5000
     
     expose:
